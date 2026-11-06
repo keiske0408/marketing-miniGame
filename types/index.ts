@@ -1,0 +1,63 @@
+export type ThemeMode = 'auto' | 'light' | 'dark';
+export type Difficulty = 'chill' | 'normal' | 'hard';
+export type Language = 'en' | 'es' | 'fr' | 'de';
+export type GameMode = 'picture-match' | 'target-timer';
+
+export interface UserProfile {
+  id: string;
+  email?: string;
+  phone?: string;
+  displayName: string;
+  isGuest: boolean;
+  demoRoundsLeft: number;
+  createdAt: string;
+}
+
+export interface UserSettings {
+  masterVolume: number; // 0 - 100
+  musicVolume: number;  // 0 - 100
+  sfxVolume: number;    // 0 - 100
+  muted: boolean;
+  haptics: boolean;
+  reducedMotion: boolean;
+  theme: ThemeMode;
+  language: Language;
+  difficulty: Difficulty;
+}
+
+export interface Consents {
+  termsAccepted: boolean;
+  marketingAccepted: boolean;
+  consentedAt: string;
+}
+
+export interface ScoreSubmission {
+  userId: string;
+  runId: string;
+  gameMode?: GameMode;
+  score: number;
+  level: number;
+  accuracy: number;
+  timestamp: number;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  userId: string;
+  displayName: string;
+  score: number;
+  accuracy: number;
+  level: number;
+  gameMode?: GameMode;
+  isCurrentUser?: boolean;
+}
+
+export interface RewardItem {
+  id: string;
+  title: string;
+  description: string;
+  badge: string;
+  code: string;
+  unlockedAt: string;
+  claimed: boolean;
+}
