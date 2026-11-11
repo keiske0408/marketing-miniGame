@@ -32,6 +32,7 @@ interface GameStoreState {
   user: UserProfile | null;
   consents: Consents | null;
   loginAsGuest: (name?: string) => void;
+  loginAsAdmin: () => Promise<void>;
   loginWithEmail: (
     identifier: string,
     displayName: string,
@@ -96,6 +97,8 @@ export const useGameStore = create<GameStoreState>()(
           id: `guest-${Date.now()}`,
           displayName: name?.trim() || 'Guest Taster',
           isGuest: true,
+          isAdmin: false,
+          role: 'player',
           demoRoundsLeft: 1,
           createdAt: new Date().toISOString(),
         };
@@ -103,16 +106,47 @@ export const useGameStore = create<GameStoreState>()(
         get().showToast('Welcome, Guest Taster (1 demo round)', 'info');
       },
 
+      loginAsAdmin: async () => {
+        const adminUser: UserProfile = {
+          id: 'admin-chateau-01',
+          displayName: 'Château Grand Admin',
+          email: 'admin@chateauvintage.com',
+          isGuest: false,
+          isAdmin: true,
+          role: 'admin',
+          demoRoundsLeft: 9999,
+          createdAt: new Date().toISOString(),
+        };
+        const consents: Consents = {
+          termsAccepted: true,
+          marketingAccepted: true,
+          consentedAt: new Date().toISOString(),
+        };
+
+        set({ user: adminUser, consents });
+        await supabaseService.upsertProfile(adminUser);
+        await supabaseService.saveConsents(adminUser.id, consents);
+        get().showToast('👑 Welcome, Château Grand Admin! Full event settings unlocked.', 'success');
+      },
+
       loginWithEmail: async (identifier, displayName, consentOpts) => {
         const cleanId = identifier.trim().toLowerCase();
         const isEmail = cleanId.includes('@');
-        const id = `vino-${cleanId.replace(/[^a-z0-9]/g, '').slice(0, 18)}-${Date.now().toString(36)}`;
+        const isAdmin = cleanId === 'admin@chateauvintage.com' || cleanId.startsWith('admin@');
+        const id = isAdmin
+          ? 'admin-chateau-01'
+          : `vino-${cleanId.replace(/[^a-z0-9]/g, '').slice(0, 18)}-${Date.now().toString(36)}`;
+
         const newUser: UserProfile = {
           id,
           email: isEmail ? cleanId : undefined,
           phone: !isEmail ? identifier.trim() : undefined,
-          displayName: displayName.trim() || (isEmail ? cleanId.split('@')[0] : 'Wine Guest'),
+          displayName:
+            displayName.trim() ||
+            (isAdmin ? 'Château Grand Admin' : isEmail ? cleanId.split('@')[0] : 'Wine Guest'),
           isGuest: false,
+          isAdmin,
+          role: isAdmin ? 'admin' : 'player',
           demoRoundsLeft: 9999,
           createdAt: new Date().toISOString(),
         };
@@ -327,6 +361,12 @@ export const useGameStore = create<GameStoreState>()(
     {
       name: 'ppm_wine_event_storage',
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state?.settings) {
+          soundManager.updateSettings(state.settings);
+          haptics.setEnabled(state.settings.haptics);
+        }
+      },
       partialize: (state) => ({
         selectedGameMode: state.selectedGameMode,
         user: state.user,

@@ -25,12 +25,19 @@ export const supabaseService = {
         .eq('id', userId)
         .single();
       if (error || !data) return null;
+      const isAdmin =
+        data.role === 'admin' ||
+        data.email === 'admin@chateauvintage.com' ||
+        (typeof data.email === 'string' && data.email.startsWith('admin@'));
+
       return {
         id: data.id,
         displayName: data.display_name,
         email: data.email,
         phone: data.phone,
         isGuest: false,
+        isAdmin,
+        role: isAdmin ? 'admin' : 'player',
         demoRoundsLeft: 9999,
         createdAt: data.created_at,
       };
@@ -47,6 +54,7 @@ export const supabaseService = {
         display_name: profile.displayName,
         email: profile.email || null,
         phone: profile.phone || null,
+        role: profile.role || (profile.isAdmin ? 'admin' : 'player'),
       });
       return !error;
     } catch {
