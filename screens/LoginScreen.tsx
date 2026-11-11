@@ -218,19 +218,6 @@ export function LoginScreen() {
               : '🍷 Access Pass & Continue'}
           </MenuButton>
 
-          <div className="login-admin-quick-row" style={{ marginTop: '16px', textAlign: 'center' }}>
-            <button
-              type="button"
-              className="text-link-btn"
-              onClick={async () => {
-                await loginAsAdmin();
-                navigate('/menu');
-              }}
-              style={{ fontSize: '0.82rem', color: '#C9A45C' }}
-            >
-              🔐 Event Staff &amp; Administrator Sign In
-            </button>
-          </div>
         </form>
       )}
 

@@ -34,6 +34,14 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
   const glassRef = useRef<HTMLDivElement>(null);
   const posRef = useRef(-12); // in percent (-12% offscreen to 112% offscreen)
 
+  const calculateSpeed = (count: number) => {
+    // For Option A (Every 2 matches):
+    const speedLevel = Math.floor(count / 2);
+    // Or for Option B (After first 2 matches):
+    // const speedLevel = Math.max(0, count - 2);
+    return Math.min(maxSpeed, baseSpeed + speedLevel * speedStep);
+  };
+
   // Calibrated arcade speed: smooth, flowing horizontal traverse
   const baseSpeed =
     settings.difficulty === 'chill' ? 54 : settings.difficulty === 'hard' ? 86 : 68;
@@ -109,7 +117,8 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
       matchCountRef.current += 1;
       const newCount = matchCountRef.current;
       setMatchCount(newCount);
-      const nextSpeed = Math.min(maxSpeed, baseSpeed + newCount * speedStep);
+      // After:
+      const nextSpeed = calculateSpeed(newCount);
       speedRef.current = nextSpeed;
       const speedMultiplier = (nextSpeed / baseSpeed).toFixed(1);
 
@@ -283,8 +292,8 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
         <div className="vintage-cartouche score-cartouche">
           <div className="cartouche-score-header">
             <span className="cartouche-label">Score</span>
-            {matchCount > 0 && (
-              <span className="cartouche-speed-tag">⚡ {((baseSpeed + matchCount * speedStep) / baseSpeed).toFixed(1)}x</span>
+            {calculateSpeed(matchCount) > baseSpeed && (
+              <span className="cartouche-speed-tag">⚡ {(calculateSpeed(matchCount) / baseSpeed).toFixed(1)}x</span>
             )}
           </div>
           <strong className="cartouche-score-value">{score}</strong>
@@ -418,7 +427,7 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
             </div>
 
             <div className="gameover-glass-display">
-              <VintageWineGlass isSilhouette={false} className="gameover-wine-glass"  />
+              <VintageWineGlass isSilhouette={false} className="gameover-wine-glass" />
             </div>
 
             <div className="gameover-stats-grid">
@@ -439,7 +448,7 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
                 onClick={handleRestart}
                 autoFocus
               >
-                 PLAY AGAIN
+                PLAY AGAIN
               </button>
               {onExit && (
                 <button
