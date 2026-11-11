@@ -9,8 +9,12 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   display_name TEXT NOT NULL,
   email TEXT,
   phone TEXT,
+  role TEXT NOT NULL DEFAULT 'player',
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Ensure role column exists if table was created in an earlier migration
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'player';
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 

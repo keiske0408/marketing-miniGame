@@ -1,6 +1,73 @@
-node_modules
-dist
-.vercel
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Production & Build outputs
+dist/
+dist-ssr/
+build/
 *.local
+
+# TypeScript cache
+*.tsbuildinfo
+next-env.d.ts
+
+# Vite cache
+.vite/
+
+# Deployment (Vercel)
+.vercel/
+
+# Environment variables & secrets
 .env
+.env.production
+.env.development
+.env.test
+.env.local
+.env.*.local
 .env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# IDE & Code Editor files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# Supabase local cache (keeps supabase/ config and migrations)
+.supabase/
+
+# Agent & Assistant local metadata
+.agents/
+skills-lock.json
+

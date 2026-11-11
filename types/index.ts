@@ -2,6 +2,7 @@ export type ThemeMode = 'auto' | 'light' | 'dark';
 export type Difficulty = 'chill' | 'normal' | 'hard';
 export type Language = 'en' | 'es' | 'fr' | 'de';
 export type GameMode = 'picture-match' | 'target-timer';
+export type TimerTargetMode = 'dynamic' | 'fixed';
 
 export interface UserProfile {
   id: string;
@@ -9,6 +10,8 @@ export interface UserProfile {
   phone?: string;
   displayName: string;
   isGuest: boolean;
+  isAdmin?: boolean;
+  role?: 'admin' | 'player';
   demoRoundsLeft: number;
   createdAt: string;
 }
@@ -23,6 +26,9 @@ export interface UserSettings {
   theme: ThemeMode;
   language: Language;
   difficulty: Difficulty;
+  // Event Host / Admin settings for Perfect Pour Timer
+  timerTargetMode?: TimerTargetMode; // 'dynamic' (randomized each round) or 'fixed'
+  timerCustomTarget?: number;        // e.g. 5.0, 3.0, 7.0 seconds
 }
 
 export interface Consents {
