@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Difficulty } from '../types';
 import { Confetti } from './Confetti';
 import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
+import { useGameStore } from '../store/gameStore';
 
 type TimerPhase = 'ready' | 'running' | 'win' | 'miss';
 
@@ -14,11 +15,10 @@ interface TargetTimerGameProps {
   onAccuracy?: (acc: number) => void;
 }
 
-const TARGET_POOL = [3.0, 4.0, 4.5, 5.0, 5.5, 6.0, 7.0, 7.5, 8.0, 10.0];
+const FAST_TARGET_POOL = [3.0, 4.0, 5.0, 6.0, 7.0];
 
-function pickTarget(level: number, prev?: number): number {
-  const maxIdx = Math.min(TARGET_POOL.length, 4 + level * 2);
-  const candidates = TARGET_POOL.slice(0, maxIdx).filter((t) => t !== prev);
+function pickDynamicTarget(prev?: number): number {
+  const candidates = FAST_TARGET_POOL.filter((t) => t !== prev);
   return candidates[Math.floor(Math.random() * candidates.length)] ?? 5.0;
 }
 
@@ -29,10 +29,20 @@ export function TargetTimerGame({
   onMatch,
   onAccuracy,
 }: TargetTimerGameProps) {
+  const settings = useGameStore((state) => state.settings);
+  const updateSettings = useGameStore((state) => state.updateSettings);
+
   const tolerance =
     difficulty === 'chill' ? 0.16 : difficulty === 'hard' ? 0.07 : 0.1;
 
-  const [targetSec, setTargetSec] = useState(() => pickTarget(level));
+  // Determine initial target: if admin set a fixed target in settings, use it, else pick dynamic
+  const [targetSec, setTargetSec] = useState(() => {
+    if (settings.timerTargetMode === 'fixed' && settings.timerCustomTarget) {
+      return settings.timerCustomTarget;
+    }
+    return pickDynamicTarget();
+  });
+
   const [phase, setPhase] = useState<TimerPhase>('ready');
   const [displayTime, setDisplayTime] = useState(0);
   const [toast, setToast] = useState('');
@@ -56,10 +66,36 @@ export function TargetTimerGame({
     setPhase(p);
   };
 
-  const resetForNextTarget = () => {
-    const nextT = pickTarget(level, targetRef.current);
-    targetRef.current = nextT;
-    setTargetSec(nextT);
+  const resetForNextTarget = useCallback(() => {
+    waitRef.current = 0;
+    elapsedRef.current = 0;
+    setDisplayTime(0);
+    setToast('');
+
+    // If dynamic, pick next fun target; if fixed by admin, keep fixed
+    if (settings.timerTargetMode !== 'fixed') {
+      const nextT = pickDynamicTarget(targetRef.current);
+      targetRef.current = nextT;
+      setTargetSec(nextT);
+    }
+    setGamePhase('ready');
+  }, [settings.timerTargetMode]);
+
+  const selectTargetDirect = (target: number | 'dynamic') => {
+    if (phaseRef.current === 'running') return;
+    soundManager.playClick();
+    haptics.tick();
+
+    if (target === 'dynamic') {
+      updateSettings({ timerTargetMode: 'dynamic' });
+      const nextT = pickDynamicTarget(targetRef.current);
+      targetRef.current = nextT;
+      setTargetSec(nextT);
+    } else {
+      updateSettings({ timerTargetMode: 'fixed', timerCustomTarget: target });
+      targetRef.current = target;
+      setTargetSec(target);
+    }
     elapsedRef.current = 0;
     setDisplayTime(0);
     setToast('');
@@ -68,6 +104,13 @@ export function TargetTimerGame({
 
   const handleAction = () => {
     if (!activeRef.current) return;
+
+    if (phaseRef.current === 'win' || phaseRef.current === 'miss') {
+      soundManager.playClick();
+      haptics.tick();
+      resetForNextTarget();
+      return;
+    }
 
     if (phaseRef.current === 'ready') {
       soundManager.playClick();
@@ -101,7 +144,7 @@ export function TargetTimerGame({
         onAccuracyRef.current?.(acc);
 
         if (!onMatchRef.current()) {
-          waitRef.current = 1.4;
+          waitRef.current = 2.2;
         }
       } else {
         const sign = stoppedAt > target ? '+' : '-';
@@ -109,7 +152,7 @@ export function TargetTimerGame({
         setGamePhase('miss');
         soundManager.playFail();
         haptics.fail();
-        waitRef.current = 1.2;
+        waitRef.current = 2.0;
       }
     }
   };
@@ -139,7 +182,7 @@ export function TargetTimerGame({
             setGamePhase('miss');
             soundManager.playFail();
             haptics.fail();
-            waitRef.current = 1.2;
+            waitRef.current = 2.0;
           }
         }
       }
@@ -160,7 +203,7 @@ export function TargetTimerGame({
       cancelAnimationFrame(raf);
       window.removeEventListener('keydown', onKey);
     };
-  }, [level, tolerance]);
+  }, [level, tolerance, resetForNextTarget]);
 
   const fillPct = Math.min(100, (displayTime / (targetSec * 1.25)) * 100);
   const targetLinePct = (1 / 1.25) * 100; // 80% height mark on glass
@@ -175,9 +218,35 @@ export function TargetTimerGame({
         }}
       >
         <div className="timer-game-inner">
+          {/* Quick Plug-and-Play Admin / Host Event Target Selector */}
+          <div className="timer-quick-target-bar" role="toolbar" aria-label="Event Target Seconds">
+            <span className="target-bar-label">🎯 EVENT TARGET:</span>
+            <button
+              type="button"
+              className={`target-chip-btn ${settings.timerTargetMode !== 'fixed' ? 'is-active' : ''}`}
+              onClick={() => selectTargetDirect('dynamic')}
+              disabled={phase === 'running'}
+            >
+              🎲 Dynamic
+            </button>
+            {[3.0, 5.0, 7.0].map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={`target-chip-btn ${settings.timerTargetMode === 'fixed' && targetSec === t ? 'is-active' : ''}`}
+                onClick={() => selectTargetDirect(t)}
+                disabled={phase === 'running'}
+              >
+                {t.toFixed(0)}s {t === 3 ? '(Fast)' : t === 5 ? '(Classic)' : '(Master)'}
+              </button>
+            ))}
+          </div>
+
           <div className="timer-target-header">
             <div className="target-pill">
-              <span className="target-pill-label">TARGET TIME</span>
+              <span className="target-pill-label">
+                {settings.timerTargetMode === 'fixed' ? '★ EVENT BOOTH TARGET' : 'DYNAMIC TARGET'}
+              </span>
               <strong className="target-pill-value">{targetSec.toFixed(2)}s</strong>
               <span className="target-pill-tol">Win window: ±{tolerance.toFixed(2)}s</span>
             </div>
@@ -222,15 +291,14 @@ export function TargetTimerGame({
                 type="button"
                 className={`btn timer-action-btn ${phase === 'running' ? 'is-stop' : ''}`}
                 onClick={handleAction}
-                disabled={phase === 'win' || phase === 'miss'}
               >
                 {phase === 'ready'
                   ? '▶ PLAY / START TIMER'
                   : phase === 'running'
                   ? `⏹ STOP AT ${targetSec.toFixed(2)}s!`
                   : phase === 'win'
-                  ? '✓ MATCH LOCKED!'
-                  : '↻ RESETTING...'}
+                  ? '🍾 NEXT TASTER / PLAY AGAIN'
+                  : '↻ NEXT TASTER / TRY AGAIN'}
               </button>
             </div>
           </div>

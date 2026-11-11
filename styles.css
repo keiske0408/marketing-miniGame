@@ -513,6 +513,57 @@ body {
   z-index: 2;
 }
 
+.timer-quick-target-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  background: rgba(30, 8, 18, 0.75);
+  border: 1px solid rgba(201, 164, 92, 0.3);
+  border-radius: var(--radius-full);
+  padding: 6px 14px;
+}
+
+.target-bar-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #C9A45C;
+}
+
+.target-chip-btn {
+  background: rgba(74, 7, 24, 0.6);
+  border: 1.5px solid rgba(201, 164, 92, 0.4);
+  color: #F5E8D0;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.target-chip-btn:hover:not(:disabled) {
+  border-color: #ffd700;
+  background: #720D28;
+  transform: translateY(-1px);
+}
+
+.target-chip-btn.is-active {
+  background: radial-gradient(ellipse at center, #d4af37 0%, #aa842c 100%);
+  border-color: #fff;
+  color: #24050d;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
+}
+
+.target-chip-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .timer-target-header {
   display: flex;
   justify-content: center;
@@ -2014,8 +2065,1042 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .screen-wrapper, .level-in, .board.fail, .timer.low b, .countdown-number, .timer-action-btn.is-stop {
+  .screen-wrapper, .level-in, .board.fail, .timer.low b, .countdown-number, .timer-action-btn.is-stop,
+  .vintage-stage-board.is-shaking, .heart-icon.is-alive, .vintage-match-toast {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ==============================================================================
+   VINTAGE PICTURE MATCH — WINE EDITION (Image 2 Design & Mechanics)
+   ============================================================================== */
+
+.vintage-play-layout {
+  width: 100%;
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 8px 12px 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.vintage-picture-match-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  position: relative;
+  user-select: none;
+}
+
+/* 1. Header Bar with Lives, Crest & Score */
+.vintage-top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 12px;
+  gap: 10px;
+  position: relative;
+  z-index: 10;
+}
+
+.vintage-exit-btn {
+  background: rgba(74, 7, 24, 0.75);
+  border: 1.5px solid #C9A45C;
+  color: #F5E8D0;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.vintage-exit-btn:hover {
+  background: #720D28;
+  border-color: #ffd700;
+  transform: translateY(-1px);
+}
+
+.vintage-cartouche {
+  background: radial-gradient(ellipse at center, #720D28 0%, #4A0718 100%);
+  border: 2px solid #C9A45C;
+  border-radius: 9999px;
+  box-shadow: 0 0 14px rgba(201, 164, 92, 0.35), inset 0 1px 3px rgba(255, 255, 255, 0.25), 0 4px 12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  color: #F5E8D0;
+}
+
+.cartouche-label {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #C9A45C;
+  text-transform: uppercase;
+}
+
+.hearts-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.heart-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.heart-icon.is-alive {
+  filter: drop-shadow(0 0 6px #e11d48);
+  animation: heartBeat 2.2s infinite ease-in-out;
+}
+
+.heart-icon.is-lost {
+  opacity: 0.25;
+  filter: grayscale(1);
+}
+
+.vintage-title-crest {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.crest-gold-frame {
+  background: radial-gradient(circle, #5c0a1f 0%, #302018 100%);
+  border: 2.5px solid #C9A45C;
+  border-radius: 12px;
+  padding: 4px 22px;
+  text-align: center;
+  box-shadow: 0 0 16px rgba(201, 164, 92, 0.4), inset 0 0 8px rgba(0, 0, 0, 0.7);
+  position: relative;
+}
+
+.title-vintage-script {
+  display: block;
+  font-family: "Brush Script MT", "Playfair Display", Georgia, cursive, serif;
+  font-size: 1.7rem;
+  font-style: italic;
+  color: #F5E8D0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 12px rgba(201, 164, 92, 0.6);
+  line-height: 1;
+}
+
+.title-picture-match {
+  display: block;
+  font-family: var(--display), Impact, sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 2.5px;
+  color: #C9A45C;
+  text-transform: uppercase;
+}
+
+.score-cartouche {
+  gap: 10px;
+}
+
+.cartouche-score-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cartouche-speed-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #2a0812;
+  background: linear-gradient(135deg, #fce8bd 0%, #C9A45C 100%);
+  border-radius: 999px;
+  box-shadow: 0 0 8px rgba(201, 164, 92, 0.7);
+  letter-spacing: 0.02em;
+  animation: pulse-speed-tag 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-speed-tag {
+  0% { transform: scale(0.96); box-shadow: 0 0 4px rgba(201, 164, 92, 0.4); }
+  100% { transform: scale(1.05); box-shadow: 0 0 12px rgba(255, 215, 0, 0.85); }
+}
+
+.cartouche-score-value {
+  font-family: var(--display), monospace;
+  font-size: 1.25rem;
+  color: #F5E8D0;
+  text-shadow: 0 0 8px rgba(201, 164, 92, 0.5);
+}
+
+.cartouche-best {
+  font-size: 0.75rem;
+  color: rgba(245, 232, 208, 0.75);
+  font-weight: 600;
+}
+
+/* 2. Main Game Stage & Vineyard Scene */
+.vintage-stage-board {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 380px;
+  max-height: 560px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 3.5px solid #C9A45C;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.85), 0 0 32px rgba(201, 164, 92, 0.3);
+  cursor: pointer;
+  background-color: #21070e;
+}
+
+.vintage-stage-board.is-shaking {
+  animation: boardShake 0.4s ease-in-out;
+}
+
+.vintage-background-layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center bottom;
+  filter: brightness(0.92) contrast(1.05);
+  z-index: 1;
+}
+
+/* Velvet Drapery Top & Corners */
+.velvet-curtain-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  background: radial-gradient(ellipse at 50% -20%, #720D28 35%, #4A0718 100%);
+  border-bottom: 2.5px solid #C9A45C;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.65);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.velvet-curtain-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 44px;
+  background: linear-gradient(90deg, #4A0718 0%, rgba(74, 7, 24, 0) 100%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.velvet-curtain-right {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 44px;
+  background: linear-gradient(-90deg, #4A0718 0%, rgba(74, 7, 24, 0) 100%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.grape-cluster-left {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  font-size: 2.2rem;
+  z-index: 4;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8));
+  pointer-events: none;
+}
+
+.grape-cluster-right {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 2.2rem;
+  z-index: 4;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8));
+  pointer-events: none;
+}
+
+/* Horizontal Dashed Alignment Guideline */
+.vintage-alignment-lane {
+  position: absolute;
+  top: 48%;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 2px dashed rgba(201, 164, 92, 0.65);
+  box-shadow: 0 0 10px rgba(201, 164, 92, 0.45);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Ornate Gold Picture Frame containing Target Silhouette (Shifts position after each match) */
+.vintage-gold-picture-frame {
+  position: absolute;
+  top: 48%;
+  transform: translate(-50%, -50%);
+  width: 175px;
+  height: 260px;
+  z-index: 4;
+  pointer-events: none;
+  transition: left 0.55s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+.frame-outer-molding {
+  width: 100%;
+  height: 100%;
+  border: 9px solid #C9A45C;
+  border-image: linear-gradient(135deg, #f7d58b 0%, #C9A45C 30%, #876728 70%, #d4af37 100%) 9;
+  box-shadow: 0 0 20px rgba(201, 164, 92, 0.5), inset 0 0 14px rgba(0, 0, 0, 0.7), 0 14px 30px rgba(0, 0, 0, 0.7);
+  background: radial-gradient(circle, #fcf6ea 0%, #ecd9b8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.frame-corner-acanthus {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: #C9A45C;
+  border: 1px solid #7c581e;
+}
+
+.frame-corner-acanthus.tl { top: -7px; left: -7px; border-radius: 4px; }
+.frame-corner-acanthus.tr { top: -7px; right: -7px; border-radius: 4px; }
+.frame-corner-acanthus.bl { bottom: -7px; left: -7px; border-radius: 4px; }
+.frame-corner-acanthus.br { bottom: -7px; right: -7px; border-radius: 4px; }
+
+.frame-grape-accent {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  width: 48px;
+  height: 48px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M28 8 Q34 2 46 6 Q38 12 34 16 Z' fill='%232E6930' stroke='%23193E1A' stroke-width='1.5'/%3E%3Cpath d='M34 14 Q44 10 52 18 Q40 22 36 20 Z' fill='%23488B4C'/%3E%3Ccircle cx='34' cy='24' r='6' fill='%234A0718' stroke='%23C9A45C' stroke-width='1'/%3E%3Ccircle cx='44' cy='22' r='6' fill='%23620D23' stroke='%23C9A45C' stroke-width='1'/%3E%3Ccircle cx='28' cy='32' r='6' fill='%23720D28' stroke='%23C9A45C' stroke-width='1'/%3E%3Ccircle cx='38' cy='32' r='6.5' fill='%234A0718' stroke='%23C9A45C' stroke-width='1'/%3E%3Ccircle cx='48' cy='30' r='5.5' fill='%23620D23' stroke='%23C9A45C' stroke-width='1'/%3E%3Ccircle cx='33' cy='42' r='5.5' fill='%23720D28' stroke='%23C9A45C' stroke-width='1'/%3E%3Ccircle cx='42' cy='41' r='5.5' fill='%234A0718' stroke='%23C9A45C' stroke-width='1'/%3E%3Ccircle cx='38' cy='49' r='4.5' fill='%23720D28' stroke='%23C9A45C' stroke-width='1'/%3E%3C/svg%3E") no-repeat center center / contain;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+  z-index: 10;
+  pointer-events: none;
+}
+
+.frame-canvas-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vintage-silhouette-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.silhouette-target-glass {
+  width: 130px;
+  height: 225px;
+  object-fit: contain;
+  filter: brightness(0) drop-shadow(0 0 2px #C9A45C) drop-shadow(0 0 6px #F5E8D0) drop-shadow(0 0 14px rgba(201, 164, 92, 0.85));
+  opacity: 0.94;
+  user-select: none;
+  pointer-events: none;
+}
+
+.vintage-glass-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.moving-wine-glass-img {
+  width: 130px;
+  height: 225px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 8px rgba(245, 232, 208, 0.45));
+  user-select: none;
+  pointer-events: none;
+  transition: filter 0.2s ease;
+}
+
+.moving-glass-wrapper.is-snapped .moving-wine-glass-img {
+  filter: drop-shadow(0 0 16px #FFD700) drop-shadow(0 0 32px #C9A45C) brightness(1.15);
+}
+
+/* Moving Realistic Wine Glass */
+.moving-glass-wrapper {
+  position: absolute;
+  top: 48%;
+  left: -12%;
+  transform: translate(-50%, -50%);
+  width: 145px;
+  height: 240px;
+  pointer-events: none;
+  z-index: 6;
+  will-change: left;
+}
+
+.moving-glass-wrapper.is-snapped {
+  transform: translate(-50%, -50%) scale(1.04);
+  transition: transform 0.18s cubic-bezier(0.2, 1.4, 0.6, 1);
+  filter: drop-shadow(0 0 32px #ffd700);
+}
+
+/* Speed Box & Horizontal Motion Lines (matching reference1.png & reference2.png) */
+.motion-speed-box {
+  position: absolute;
+  top: 12%;
+  left: -130px;
+  width: 135px;
+  height: 76%;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  background: linear-gradient(to right, transparent, rgba(201, 164, 92, 0.12), rgba(201, 164, 92, 0.28));
+  border-radius: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 12px rgba(201, 164, 92, 0.3);
+}
+
+.speed-line {
+  display: block;
+  height: 2px;
+  background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.35) 40%, rgba(255, 255, 255, 0.9) 100%);
+  box-shadow: 0 0 4px rgba(201, 164, 92, 0.9);
+}
+.speed-line.line-1 { width: 90%; margin-left: 10%; }
+.speed-line.line-2 { width: 100%; }
+.speed-line.line-3 { width: 95%; margin-left: 5%; }
+.speed-line.line-4 { width: 85%; margin-left: 15%; }
+
+.moving-glass-glow-trail {
+  position: absolute;
+  top: 15%;
+  left: -70px;
+  right: 15px;
+  bottom: 20%;
+  background: linear-gradient(to right, transparent, rgba(201, 164, 92, 0.2), rgba(201, 164, 92, 0.45));
+  filter: blur(8px);
+  border-radius: 14px;
+  pointer-events: none;
+}
+
+.moving-wine-glass {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.8));
+}
+
+/* Foreground Cellar Table with Barrel & Bottle */
+.cellar-table-foreground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 82px;
+  background: linear-gradient(180deg, #4A2411 0%, #2A1308 100%);
+  border-top: 4px solid #63331b;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.12), 0 -8px 24px rgba(0, 0, 0, 0.85);
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 24px 8px;
+  pointer-events: none;
+}
+
+.foreground-barrel {
+  position: relative;
+  width: 78px;
+  height: 62px;
+  background: radial-gradient(ellipse at center, #6b3f20 0%, #3d2010 100%);
+  border: 3px solid #8f5830;
+  border-radius: 10px 10px 6px 6px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7), 0 4px 10px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.barrel-gold-crest {
+  font-size: 1.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+.barrel-grapes {
+  position: absolute;
+  top: -14px;
+  right: -8px;
+  font-size: 1.4rem;
+}
+
+.foreground-bottle-group {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.bottle-grapes {
+  font-size: 1.6rem;
+  transform: translateY(4px);
+}
+
+.wine-bottle-silhouette {
+  width: 36px;
+  height: 74px;
+  background: linear-gradient(to right, #1f3622 0%, #2e4d32 40%, #152417 100%);
+  border-radius: 6px 6px 2px 2px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+}
+
+.wine-bottle-silhouette::before {
+  content: "";
+  position: absolute;
+  top: -20px;
+  left: 12px;
+  width: 12px;
+  height: 22px;
+  background: linear-gradient(to right, #1f3622, #2e4d32);
+  border-radius: 2px;
+}
+
+.wine-bottle-silhouette::after {
+  content: "";
+  position: absolute;
+  top: -24px;
+  left: 11px;
+  width: 14px;
+  height: 6px;
+  background: #8B1E2F;
+  border-radius: 2px;
+}
+
+.bottle-label-crest {
+  font-size: 0.45rem;
+  font-family: serif;
+  color: #2A1308;
+  background: #fdf5e2;
+  padding: 2px 4px;
+  border: 0.5px solid #C9A45C;
+  border-radius: 1px;
+  font-weight: 700;
+}
+
+/* Toast Notifications */
+.vintage-match-toast {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 24px;
+  border-radius: 9999px;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  z-index: 15;
+  text-align: center;
+  pointer-events: none;
+  animation: toastPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+}
+
+.vintage-match-toast.is-success {
+  background: radial-gradient(ellipse at center, #720D28 0%, #4A0718 100%);
+  border: 2.5px solid #C9A45C;
+  color: #F5E8D0;
+  box-shadow: 0 0 28px rgba(201, 164, 92, 0.85), 0 8px 24px rgba(0, 0, 0, 0.7);
+}
+
+.vintage-match-toast.is-fail {
+  background: radial-gradient(ellipse at center, #6b1426 0%, #380712 100%);
+  border: 2px solid #ef4444;
+  color: #fee2e2;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.55), 0 8px 24px rgba(0, 0, 0, 0.7);
+}
+
+/* 3. Bottom Controls & Ornate "STOP" Button (matching reference1.png & reference2.png) */
+.vintage-controls-footer {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.vintage-stop-button {
+  background: radial-gradient(ellipse at center, #8a1331 0%, #4A0718 80%, #300510 100%);
+  border: 3.5px solid #C9A45C;
+  border-radius: 9999px;
+  padding: 12px 52px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  box-shadow: 0 0 28px rgba(201, 164, 92, 0.55), 0 8px 24px rgba(0, 0, 0, 0.75), inset 0 1px 3px rgba(255, 255, 255, 0.4);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  position: relative;
+}
+
+.vintage-stop-button:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 38px rgba(201, 164, 92, 0.85), 0 12px 28px rgba(0, 0, 0, 0.85);
+}
+
+.vintage-stop-button:active:not(:disabled) {
+  transform: translateY(2px) scale(0.98);
+}
+
+.vintage-stop-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.stop-flourish {
+  font-size: 1.4rem;
+  color: #C9A45C;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+.stop-button-hand {
+  font-size: 2rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+.stop-button-text {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
+
+.stop-button-title {
+  font-family: var(--display), "Playfair Display", Georgia, serif;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #F5E8D0;
+  letter-spacing: 2.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 14px rgba(201, 164, 92, 0.6);
+  line-height: 1;
+}
+
+.stop-button-sub {
+  font-family: Georgia, serif;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: #C9A45C;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* 4. Elegant Game Over Modal */
+.vintage-gameover-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 5, 12, 0.88);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+}
+
+.vintage-gameover-card {
+  background: radial-gradient(circle at 50% 30%, #5c0d20 0%, #300611 70%, #1c030a 100%);
+  border: 3px solid #C9A45C;
+  border-radius: 20px;
+  padding: 30px 28px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 0 44px rgba(201, 164, 92, 0.45), 0 24px 60px rgba(0, 0, 0, 0.9);
+  text-align: center;
+  color: #F5E8D0;
+  animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-sizing: border-box;
+}
+
+.gameover-crest {
+  margin-bottom: 12px;
+}
+
+.gameover-icon {
+  font-size: 2.8rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.gameover-title {
+  font-family: var(--display), serif;
+  font-size: 2rem;
+  color: #F5E8D0;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9), 0 0 16px rgba(201, 164, 92, 0.6);
+  margin: 0;
+}
+
+.gameover-sub {
+  font-family: Georgia, serif;
+  font-style: italic;
+  color: #C9A45C;
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+.gameover-glass-display {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0;
+}
+
+.gameover-wine-glass {
+  width: 85px;
+  height: 140px;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.8));
+}
+
+.gameover-wine-glass .moving-wine-glass-img {
+  width: 100%;
+  height: 100%;
+}
+
+.gameover-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.gameover-stat-box {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1.5px solid rgba(201, 164, 92, 0.4);
+  border-radius: 12px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gameover-stat-box .stat-label {
+  font-size: 0.72rem;
+  letter-spacing: 1.5px;
+  color: #C9A45C;
+  font-weight: 700;
+}
+
+.gameover-stat-box .stat-value {
+  font-family: var(--display), monospace;
+  font-size: 1.5rem;
+}
+
+.gameover-actions-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.vintage-play-again-btn {
+  background: radial-gradient(ellipse at center, #9e1837 0%, #61091e 100%);
+  border: 2.5px solid #C9A45C;
+  color: #F5E8D0;
+  font-family: var(--display), Impact, sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: 1.5px;
+  padding: 14px 24px;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(201, 164, 92, 0.4), 0 6px 18px rgba(0, 0, 0, 0.6);
+  transition: all 0.15s ease;
+}
+
+.vintage-play-again-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 28px rgba(201, 164, 92, 0.7);
+}
+
+.vintage-exit-modal-btn {
+  background: transparent;
+  border: 1.5px solid rgba(201, 164, 92, 0.4);
+  color: #F5E8D0;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vintage-exit-modal-btn:hover {
+  border-color: #C9A45C;
+  background: rgba(201, 164, 92, 0.15);
+}
+
+/* Animations */
+@keyframes boardShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+@keyframes toastPop {
+  0% { transform: translate(-50%, -10px) scale(0.9); opacity: 0; }
+  100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+/* Mobile & Tablet Responsiveness */
+@media (max-width: 768px) {
+  .vintage-top-header {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .vintage-stage-board {
+    min-height: 320px;
+  }
+  .vintage-gold-picture-frame {
+    width: 140px;
+    height: 215px;
+  }
+  .moving-glass-wrapper {
+    width: 120px;
+    height: 195px;
+  }
+  .vintage-stop-button {
+    padding: 10px 32px;
+  }
+  .stop-button-title {
+    font-size: 1.25rem;
+  }
+  .stop-button-sub {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .vintage-top-header {
+    gap: 6px;
+  }
+  .vintage-cartouche {
+    padding: 4px 10px;
+  }
+  .cartouche-label {
+    font-size: 0.8rem;
+  }
+  .heart-icon {
+    font-size: 1rem;
+  }
+  .crest-gold-frame {
+    padding: 2px 14px;
+  }
+  .title-vintage-script {
+    font-size: 1.35rem;
+  }
+  .title-picture-match {
+    font-size: 0.68rem;
+    letter-spacing: 1.8px;
+  }
+  .vintage-stage-board {
+    min-height: 270px;
+  }
+  .vintage-gold-picture-frame {
+    width: 110px;
+    height: 170px;
+  }
+  .moving-glass-wrapper {
+    width: 95px;
+    height: 155px;
+  }
+  .cellar-table-foreground {
+    height: 64px;
+    padding: 0 12px 6px;
+  }
+  .foreground-barrel {
+    width: 58px;
+    height: 48px;
+  }
+  .barrel-gold-crest {
+    font-size: 1.1rem;
+  }
+  .barrel-grapes {
+    font-size: 1.1rem;
+  }
+  .wine-bottle-silhouette {
+    width: 28px;
+    height: 56px;
+  }
+  .vintage-stop-button {
+    padding: 8px 24px;
+    gap: 10px;
+  }
+  .stop-button-hand {
+    font-size: 1.4rem;
+  }
+  .stop-button-title {
+    font-size: 1.1rem;
+  }
+  .stop-button-sub {
+    font-size: 0.68rem;
+  }
+}
+
+/* ==============================================================================
+   ADMIN GATE & PRIVILEGES STYLES
+   ============================================================================== */
+
+.admin-lock-card {
+  background: radial-gradient(circle at 50% 25%, #4A0718 0%, #2A040E 70%, #150207 100%);
+  border: 2px solid #C9A45C;
+  border-radius: var(--radius-lg);
+  padding: 36px 28px;
+  box-shadow: 0 0 32px rgba(201, 164, 92, 0.35), 0 20px 48px rgba(0, 0, 0, 0.85);
+  text-align: center;
+  margin-top: 16px;
+}
+
+.admin-lock-crest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.admin-lock-icon {
+  font-size: 3rem;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.8));
+}
+
+.admin-lock-title {
+  font-family: var(--display), serif;
+  font-size: 1.6rem;
+  color: #F5E8D0;
+  letter-spacing: 1.5px;
+  margin: 0;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 14px rgba(201, 164, 92, 0.5);
+}
+
+.admin-lock-sub {
+  font-family: Georgia, serif;
+  font-size: 0.92rem;
+  color: #C9A45C;
+  line-height: 1.5;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.admin-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 380px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.admin-input {
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 1.5px solid #C9A45C !important;
+  color: #F5E8D0 !important;
+  font-size: 1rem !important;
+  padding: 12px 16px !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.admin-error-text {
+  color: #f87171;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.admin-btn-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.admin-submit-btn {
+  background: radial-gradient(ellipse at center, #8a1331 0%, #4A0718 100%) !important;
+  border: 2px solid #C9A45C !important;
+  color: #F5E8D0 !important;
+  font-weight: 800 !important;
+  padding: 12px 20px !important;
+  border-radius: var(--radius-full) !important;
+  cursor: pointer;
+  box-shadow: 0 0 16px rgba(201, 164, 92, 0.35);
+  transition: all 0.15s ease;
+}
+
+.admin-submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 24px rgba(201, 164, 92, 0.65);
+}
+
+.admin-quick-btn {
+  border: 1.5px dashed #C9A45C !important;
+  color: #ffd700 !important;
+  font-weight: 700 !important;
+}
+
+.admin-privilege-banner {
+  background: radial-gradient(ellipse at center, rgba(114, 13, 40, 0.9) 0%, rgba(74, 7, 24, 0.95) 100%);
+  border: 2px solid #C9A45C;
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 0 20px rgba(201, 164, 92, 0.3);
+}
+
+.admin-crown-icon {
+  font-size: 2rem;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.8));
+}
+
+.admin-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-banner-text strong {
+  font-family: var(--display), sans-serif;
+  color: #ffd700;
+  font-size: 0.92rem;
+  letter-spacing: 1px;
+}
+
+.admin-banner-text span {
+  font-size: 0.8rem;
+  color: #F5E8D0;
 }

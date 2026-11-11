@@ -13,6 +13,7 @@ interface PauseMenuProps {
 
 export function PauseMenu({ onResume, onRestart }: PauseMenuProps) {
   const navigate = useNavigate();
+  const user = useGameStore((state) => state.user);
   const [showSettings, setShowSettings] = useState(false);
   const settings = useGameStore((state) => state.settings);
   const updateSettings = useGameStore((state) => state.updateSettings);
@@ -35,9 +36,11 @@ export function PauseMenu({ onResume, onRestart }: PauseMenuProps) {
             <MenuButton variant="secondary" onClick={onRestart}>
               ↺ Restart Round
             </MenuButton>
-            <MenuButton variant="ghost" onClick={() => setShowSettings(true)}>
-              ⚙ Quick Settings
-            </MenuButton>
+            {user?.isAdmin && (
+              <MenuButton variant="ghost" onClick={() => setShowSettings(true)}>
+                ⚙ Admin Settings
+              </MenuButton>
+            )}
             <MenuButton variant="danger" onClick={handleQuit}>
               ✕ Quit to Menu
             </MenuButton>
