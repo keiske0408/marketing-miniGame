@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GameBoard } from '../components/GameBoard';
+import { VintageWineMatch } from '../components/VintageWineMatch';
 import { TargetTimerGame } from '../components/TargetTimerGame';
+import { GameBoard } from '../components/GameBoard';
 import { Hud } from '../components/Hud';
 import { Overlay } from '../components/Overlay';
 import { Countdown } from '../components/Countdown';
@@ -40,13 +41,19 @@ export function GameScreen() {
   const [time, setTime] = useState(cfg.time);
   const scene = SCENES[(level - 1) % SCENES.length];
 
-  // Start background ambient music when gameplay begins
+  // Ensure ambient lounge music is active
   useEffect(() => {
     soundManager.startMusic();
-    return () => {
-      soundManager.stopMusic();
-    };
   }, []);
+
+  // Duck music when paused or on game over so voice / victory chimes stand out
+  useEffect(() => {
+    if (isGameOver || isPaused) {
+      soundManager.duckMusic();
+    } else {
+      soundManager.unduckMusic();
+    }
+  }, [isGameOver, isPaused]);
 
   // Main game countdown timer: strictly freezes when showCountdown, isPaused, levelDone, or isGameOver is true
   useEffect(() => {
@@ -126,11 +133,35 @@ export function GameScreen() {
     setIsPaused(false);
     setTime(getLevel(targetLevel, settings.difficulty).time);
     setShowCountdown(true);
+    soundManager.startMusic();
   };
 
   const handleCountdownComplete = useCallback(() => {
     setShowCountdown(false);
   }, []);
+
+  // Primary Mode: Vintage Wine Picture Match (Single objective, 3 lives, no timer, no levels)
+  if (selectedGameMode === 'picture-match') {
+    return (
+      <main className="app vintage-play-layout">
+        <VintageWineMatch
+          onScoreUpdate={(_s) => {
+            recordStoreMatch(100);
+          }}
+          onGameOver={(_finalScore) => {
+            if (user?.isGuest) {
+              decrementDemoRound();
+            }
+          }}
+          onExit={() => {
+            soundManager.playClick();
+            haptics.tick();
+            navigate(user ? '/menu' : '/home');
+          }}
+        />
+      </main>
+    );
+  }
 
   if (isGameOver) {
     return (
@@ -168,7 +199,7 @@ export function GameScreen() {
           <span className="back-arrow">‹</span> Lounge
         </button>
 
-        <div className="mode-switch-pills" role="tablist" aria-label="Switch Game">
+        {/* <div className="mode-switch-pills" role="tablist" aria-label="Switch Game">
           <button
             type="button"
             role="tab"
@@ -197,7 +228,7 @@ export function GameScreen() {
           >
             ⏱️ Perfect Pour
           </button>
-        </div>
+        </div> */}
 
         <button
           type="button"

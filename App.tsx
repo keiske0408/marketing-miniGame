@@ -11,18 +11,35 @@ import { RewardsScreen } from './screens/RewardsScreen';
 import { RequireAuth } from './components/RequireAuth';
 import { Toast } from './components/Toast';
 import { useGameStore } from './store/gameStore';
+import { soundManager } from './services/audio';
 
 export default function App() {
-  const theme = useGameStore((state) => state.settings.theme);
+  const settings = useGameStore((state) => state.settings);
 
   useEffect(() => {
     // Synchronize HTML theme data-attribute
-    if (theme === 'auto') {
+    if (settings.theme === 'auto') {
       document.documentElement.removeAttribute('data-theme');
     } else {
-      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.setAttribute('data-theme', settings.theme);
     }
-  }, [theme]);
+    // Synchronize sound settings on mount
+    soundManager.updateSettings(settings);
+  }, [settings]);
+
+  useEffect(() => {
+    // Global user-gesture listener to unlock AudioContext on any screen upon first tap/click/key
+    const handleUnlock = () => {
+      soundManager.unlock();
+      soundManager.startMusic();
+    };
+    window.addEventListener('pointerdown', handleUnlock, { passive: true });
+    window.addEventListener('keydown', handleUnlock, { passive: true });
+    return () => {
+      window.removeEventListener('pointerdown', handleUnlock);
+      window.removeEventListener('keydown', handleUnlock);
+    };
+  }, []);
 
   return (
     <BrowserRouter>

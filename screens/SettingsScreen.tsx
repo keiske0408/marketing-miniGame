@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Screen } from '../components/Screen';
 import { Slider } from '../components/Slider';
@@ -6,7 +6,7 @@ import { Toggle } from '../components/Toggle';
 import { MenuButton } from '../components/MenuButton';
 import { Modal } from '../components/Modal';
 import { useGameStore } from '../store/gameStore';
-import type { Difficulty, Language, ThemeMode } from '../types';
+import type { Difficulty, ThemeMode } from '../types';
 
 export function SettingsScreen() {
   const navigate = useNavigate();
@@ -15,9 +15,12 @@ export function SettingsScreen() {
   const updateSettings = useGameStore((state) => state.updateSettings);
   const updateDisplayName = useGameStore((state) => state.updateDisplayName);
   const deleteAccountData = useGameStore((state) => state.deleteAccountData);
+  const loginAsAdmin = useGameStore((state) => state.loginAsAdmin);
   const logout = useGameStore((state) => state.logout);
 
   const [editName, setEditName] = useState(user?.displayName || '');
+  const [adminEmailInput, setAdminEmailInput] = useState('');
+  const [adminError, setAdminError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [modalContent, setModalContent] = useState<{ title: string; body: string } | null>(null);
 
@@ -34,14 +37,106 @@ export function SettingsScreen() {
     navigate('/home');
   };
 
+  // RESTRICT ACCESS TO ADMIN USERS ONLY: If a non-admin player visits /settings, redirect them to the menu
+  useEffect(() => {
+    if (user && !user.isAdmin) {
+      navigate('/menu', { replace: true });
+    }
+  }, [user, navigate]);
+
+  // If not logged in as admin, show admin login gate or redirect
+  if (!user?.isAdmin) {
+    return (
+      <Screen
+        title="Admin Settings"
+        subtitle="Event Kiosk & Booth Controls"
+        showBack={true}
+        backTo={user ? '/menu' : '/home'}
+        className="settings-screen"
+      >
+        <div className="card admin-lock-card">
+          <div className="admin-lock-crest">
+            <span className="admin-lock-icon" aria-hidden="true">🔒</span>
+            <h2 className="admin-lock-title">CHÂTEAU ADMIN ONLY</h2>
+            <p className="admin-lock-sub">
+              Access to game settings, difficulty presets, sound balancing, and booth target controls is strictly restricted to event administrators.
+            </p>
+          </div>
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const clean = adminEmailInput.trim().toLowerCase();
+              if (clean === 'admin@chateauvintage.com' || clean.startsWith('admin@')) {
+                await loginAsAdmin();
+                setAdminError('');
+              } else {
+                setAdminError('Invalid admin email. Use: admin@chateauvintage.com');
+              }
+            }}
+            className="admin-login-form"
+          >
+            <label htmlFor="admin-email" className="setting-row-label">
+              Administrator Email
+            </label>
+            <input
+              id="admin-email"
+              type="email"
+              placeholder="admin@chateauvintage.com"
+              value={adminEmailInput}
+              onChange={(e) => {
+                setAdminEmailInput(e.target.value);
+                setAdminError('');
+              }}
+              className="form-input admin-input"
+            />
+
+            {adminError && <div className="admin-error-text">{adminError}</div>}
+
+            <div className="admin-btn-stack">
+              <button type="submit" className="btn btn-primary admin-submit-btn">
+                🔓 Unlock Admin Controls
+              </button>
+
+              <button
+                type="button"
+                className="btn ghost admin-quick-btn"
+                onClick={async () => {
+                  await loginAsAdmin();
+                }}
+              >
+                👑 1-Click Demo Admin Login
+              </button>
+
+              <button
+                type="button"
+                className="btn ghost text-muted"
+                onClick={() => navigate(user ? '/menu' : '/home')}
+              >
+                ‹ Return to Lounge
+              </button>
+            </div>
+          </form>
+        </div>
+      </Screen>
+    );
+  }
+
   return (
     <Screen
-      title="Settings"
-      subtitle="Customize your experience & account preferences"
+      title="Admin Settings"
+      subtitle="Château Event & Booth Controls • Administrator Mode"
       showBack={true}
       backTo={user ? '/menu' : '/home'}
       className="settings-screen"
     >
+      <div className="admin-privilege-banner">
+        <span className="admin-crown-icon" aria-hidden="true">👑</span>
+        <div className="admin-banner-text">
+          <strong>CHÂTEAU ADMINISTRATOR PRIVILEGES ACTIVE</strong>
+          <span>Logged in as {user.email || 'admin@chateauvintage.com'} • Full event kiosk control unlocked</span>
+        </div>
+      </div>
       {/* Audio Section */}
       <section className="settings-section">
         <h2 className="section-title">🔊 Audio Controls</h2>
@@ -123,7 +218,7 @@ export function SettingsScreen() {
             </select>
           </div>
 
-          <div className="setting-row">
+          {/* <div className="setting-row">
             <label htmlFor="lang-select" className="setting-row-label">
               Language
             </label>
@@ -138,7 +233,61 @@ export function SettingsScreen() {
               <option value="fr">Français (Ready)</option>
               <option value="de">Deutsch (Ready)</option>
             </select>
+          </div> */}
+        </div>
+      </section>
+
+      {/* Event Host & Booth Controls */}
+      <section className="settings-section">
+        <h2 className="section-title">🍷 Event Host &amp; Booth Controls</h2>
+        <div className="settings-card">
+          <div className="setting-row">
+            <label htmlFor="timer-mode-select" className="setting-row-label">
+              Perfect Pour Target Mode
+            </label>
+            <select
+              id="timer-mode-select"
+              value={settings.timerTargetMode || 'dynamic'}
+              onChange={(e) =>
+                updateSettings({
+                  timerTargetMode: e.target.value as 'dynamic' | 'fixed',
+                })
+              }
+              className="select-input"
+            >
+              <option value="dynamic">🎲 Dynamic (Randomized targets for each round)</option>
+              <option value="fixed">🎯 Fixed Target (Set specific seconds for booth challenge)</option>
+            </select>
           </div>
+
+          {settings.timerTargetMode === 'fixed' && (
+            <div className="setting-row">
+              <label htmlFor="timer-target-select" className="setting-row-label">
+                Fixed Target Second
+              </label>
+              <select
+                id="timer-target-select"
+                value={settings.timerCustomTarget || 5.0}
+                onChange={(e) =>
+                  updateSettings({
+                    timerCustomTarget: parseFloat(e.target.value),
+                  })
+                }
+                className="select-input"
+              >
+                <option value="3.0">3.00 Seconds (Fast Paced / High Throughput)</option>
+                <option value="4.0">4.00 Seconds (Quick Pour)</option>
+                <option value="5.0">5.00 Seconds (Classic Event Standard)</option>
+                <option value="6.0">6.00 Seconds (Deliberate Pour)</option>
+                <option value="7.0">7.00 Seconds (Sommelier Master Challenge)</option>
+                <option value="10.0">10.00 Seconds (Grand Vintage Endurance)</option>
+              </select>
+            </div>
+          )}
+
+          <p className="setting-hint" style={{ fontSize: '0.82rem', color: '#ccb2bc', marginTop: '8px' }}>
+            Configure the booth challenge at the event kiosk. Setting a Fixed Target ensures all attendees attempt the exact same second for event prizes and leaderboards.
+          </p>
         </div>
       </section>
 

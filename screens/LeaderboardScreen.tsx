@@ -12,7 +12,6 @@ import type { LeaderboardEntry, GameMode } from '../types';
 export function LeaderboardScreen() {
   const user = useGameStore((state) => state.user);
   const highScore = useGameStore((state) => state.highScore);
-  const highestLevel = useGameStore((state) => state.highestLevel);
   const [tab, setTab] = useState<'all' | 'picture-match' | 'target-timer'>('all');
   const [entries, setEntries] = useState<LeaderboardEntry[]>(INITIAL_LEADERBOARD);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -98,7 +97,7 @@ export function LeaderboardScreen() {
             <div className="rank-details">
               <span className="rank-player-name">{user.displayName}</span>
               <span className="rank-player-score">
-                Best Score: <strong>{highScore} pts</strong> (Vintage {highestLevel})
+                Best Score: <strong>{highScore} pts</strong> 
               </span>
             </div>
             <div className="rank-medal">🍷</div>

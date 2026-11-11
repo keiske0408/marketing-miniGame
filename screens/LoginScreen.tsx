@@ -37,6 +37,7 @@ export function LoginScreen() {
   const location = useLocation();
   const loginWithEmail = useGameStore((state) => state.loginWithEmail);
   const loginAsGuest = useGameStore((state) => state.loginAsGuest);
+  const loginAsAdmin = useGameStore((state) => state.loginAsAdmin);
 
   const [activeTab, setActiveTab] = useState<'signup' | 'signin' | 'guest'>('signup');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -216,6 +217,20 @@ export function LoginScreen() {
               ? '🍷 Activate Tasting Pass & Play'
               : '🍷 Access Pass & Continue'}
           </MenuButton>
+
+          <div className="login-admin-quick-row" style={{ marginTop: '16px', textAlign: 'center' }}>
+            <button
+              type="button"
+              className="text-link-btn"
+              onClick={async () => {
+                await loginAsAdmin();
+                navigate('/menu');
+              }}
+              style={{ fontSize: '0.82rem', color: '#C9A45C' }}
+            >
+              🔐 Event Staff &amp; Administrator Sign In
+            </button>
+          </div>
         </form>
       )}
 

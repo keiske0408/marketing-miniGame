@@ -31,6 +31,7 @@ export function SplashScreen() {
 
   const handleStart = async () => {
     await soundManager.unlock();
+    soundManager.startMusic();
     soundManager.playClick();
     haptics.tick();
 

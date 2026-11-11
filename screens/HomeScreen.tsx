@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Screen } from '../components/Screen';
 import { MenuButton } from '../components/MenuButton';
@@ -12,10 +12,15 @@ import type { GameMode } from '../types';
 export function HomeScreen() {
   const navigate = useNavigate();
   const user = useGameStore((state) => state.user);
+  const run = useGameStore((state) => state.run);
   const selectedGameMode = useGameStore((state) => state.selectedGameMode);
   const setGameMode = useGameStore((state) => state.setGameMode);
   const startRun = useGameStore((state) => state.startRun);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+
+  useEffect(() => {
+    soundManager.startMusic();
+  }, []);
 
   const handleSelectMode = (mode: GameMode) => {
     soundManager.playClick();
@@ -30,7 +35,9 @@ export function HomeScreen() {
       if (user.isGuest && user.demoRoundsLeft <= 0) {
         navigate('/login', { state: { guestExhausted: true } });
       } else {
-        startRun(true, mode);
+        if (!run.isActive || run.gameMode !== mode) {
+          startRun(true, mode);
+        }
         navigate('/play');
       }
     } else {
@@ -69,12 +76,12 @@ export function HomeScreen() {
             }}
           >
             <div className="game-mode-top">
-              <span className="game-mode-icon">🖼️</span>
-              <span className="game-mode-tag">GAME 1</span>
+              <span className="game-mode-icon">🍷</span>
+              <span className="game-mode-tag">GAME 1 • 3 LIVES</span>
             </div>
             <h3 className="game-mode-title">Vintage Picture Match</h3>
             <p className="game-mode-desc">
-              Stop the sliding vineyard &amp; cellar artwork slice right inside the matching frame gap.
+              Stop the moving wine glass at the perfect moment into the missing silhouette inside the ornate gold frame.
             </p>
             <span className="game-mode-select-indicator">
               {selectedGameMode === 'picture-match' ? '✓ Selected' : 'Tap to Select'}
@@ -110,12 +117,22 @@ export function HomeScreen() {
 
         <div className="home-actions-card">
           <MenuButton
-            variant="primary"
+            variant={run.isActive && run.gameMode === selectedGameMode ? 'accent' : 'primary'}
             onClick={() => handlePlayClick()}
             className="btn-play-large"
-            badge={selectedGameMode === 'target-timer' ? 'STOPWATCH' : 'PUZZLE'}
+            badge={
+              run.isActive && run.gameMode === selectedGameMode
+                ? `RESUME • ${run.score} PTS`
+                : selectedGameMode === 'target-timer'
+                ? 'STOPWATCH'
+                : '3 LIVES'
+            }
           >
-            {selectedGameMode === 'target-timer'
+            {run.isActive && run.gameMode === selectedGameMode
+              ? selectedGameMode === 'target-timer'
+                ? '▶ RESUME PERFECT POUR TIMER'
+                : '▶ RESUME PICTURE MATCH'
+              : selectedGameMode === 'target-timer'
               ? '🍷 PLAY PERFECT POUR TIMER'
               : '🍷 PLAY PICTURE MATCH'}
           </MenuButton>

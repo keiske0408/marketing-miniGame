@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Screen } from '../components/Screen';
 import { MenuButton } from '../components/MenuButton';
@@ -6,6 +6,7 @@ import { Avatar } from '../components/Avatar';
 import { Modal } from '../components/Modal';
 import { useGameStore } from '../store/gameStore';
 import { HOW_TO_PLAY_STEPS } from '../config/constants';
+import { soundManager } from '../services/audio';
 import type { GameMode } from '../types';
 
 export function MenuScreen() {
@@ -13,7 +14,6 @@ export function MenuScreen() {
   const user = useGameStore((state) => state.user);
   const run = useGameStore((state) => state.run);
   const highScore = useGameStore((state) => state.highScore);
-  const highestLevel = useGameStore((state) => state.highestLevel);
   const rewards = useGameStore((state) => state.rewards);
   const logout = useGameStore((state) => state.logout);
   const startRun = useGameStore((state) => state.startRun);
@@ -21,6 +21,10 @@ export function MenuScreen() {
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const unclaimedRewardsCount = rewards.filter((r) => !r.claimed).length;
   const guestBlocked = Boolean(user?.isGuest && user.demoRoundsLeft <= 0);
+
+  useEffect(() => {
+    soundManager.startMusic();
+  }, []);
 
   const handlePlayGame = (mode: GameMode) => {
     if (guestBlocked) {
@@ -52,7 +56,9 @@ export function MenuScreen() {
         <div className="player-details">
           <div className="player-name-row">
             <h2 className="player-name">{user?.displayName || 'Wine Guest'}</h2>
-            {user?.isGuest ? (
+            {user?.isAdmin ? (
+              <span className="badge-verified" style={{ background: '#d4af37', color: '#1c050d', fontWeight: 800 }}>👑 CHÂTEAU ADMIN</span>
+            ) : user?.isGuest ? (
               <span className="badge-guest">GUEST ({user.demoRoundsLeft} left)</span>
             ) : (
               <span className="badge-verified">🍷 VIP TASTER</span>
@@ -63,10 +69,10 @@ export function MenuScreen() {
               <span className="stat-label">BEST SCORE</span>
               <span className="stat-num">{highScore} pts</span>
             </div>
-            <div className="player-stat-divider" />
+            {/* <div className="player-stat-divider" /> */}
             <div className="player-stat-item">
-              <span className="stat-label">BEST VINTAGE</span>
-              <span className="stat-num">Lv.{highestLevel}</span>
+              {/* <span className="stat-label">BEST VINTAGE</span> */}
+              {/* <span className="stat-num">Lv.{highestLevel}</span> */}
             </div>
           </div>
         </div>
@@ -74,36 +80,49 @@ export function MenuScreen() {
 
       {/* Main Action Buttons */}
       <div className="menu-actions-stack">
-        {run.isActive && (
+        {run.isActive && run.gameMode === 'picture-match' ? (
           <MenuButton
             variant="accent"
             onClick={handleContinue}
-            badge={`Vintage ${run.level}`}
-            subtitle={`Current Score: ${run.score}`}
+            icon="🍷"
+            badge={`RESUME • ${run.score} PTS`}
+            // subtitle="Continue your active wine tasting challenge"
           >
-            ▶ RESUME ACTIVE TASTING
+            ▶ RESUME VINTAGE PICTURE MATCH
+          </MenuButton>
+        ) : (
+          <MenuButton
+            variant="primary"
+            onClick={() => handlePlayGame('picture-match')}
+            icon="🍷"
+            badge="GAME 1 • 3 LIVES"
+            subtitle="Stop the moving wine glass into the golden silhouette"
+          >
+            PLAY VINTAGE PICTURE MATCH
           </MenuButton>
         )}
 
-        <MenuButton
-          variant="primary"
-          onClick={() => handlePlayGame('picture-match')}
-          icon="🖼️"
-          badge="GAME 1"
-          subtitle="Slide & lock the missing vineyard artwork slice"
-        >
-          PLAY VINTAGE PICTURE MATCH
-        </MenuButton>
-
-        <MenuButton
-          variant="secondary"
-          onClick={() => handlePlayGame('target-timer')}
-          icon="⏱️"
-          badge="GAME 2 • NEW"
-          subtitle="Hit the exact target second on the stopwatch to win"
-        >
-          PLAY PERFECT POUR TIMER
-        </MenuButton>
+        {run.isActive && run.gameMode === 'target-timer' ? (
+          <MenuButton
+            variant="accent"
+            onClick={handleContinue}
+            icon="⏱️"
+            badge={`RESUME • ${run.score} PTS`}
+            // subtitle="Continue your active stopwatch challenge"
+          >
+            ▶ RESUME PERFECT POUR TIMER
+          </MenuButton>
+        ) : (
+          <MenuButton
+            variant="secondary"
+            onClick={() => handlePlayGame('target-timer')}
+            icon="⏱️"
+            badge="GAME 2 • FAST PACED"
+            // subtitle="Hit the target second on the stopwatch to win"
+          >
+            PLAY PERFECT POUR TIMER
+          </MenuButton>
+        )}
 
         <div className="menu-two-col">
           <MenuButton
@@ -123,21 +142,31 @@ export function MenuScreen() {
           </MenuButton>
         </div>
 
-        <div className="menu-two-col">
+        {user?.isAdmin ? (
+          <div className="menu-two-col">
+            <MenuButton
+              variant="ghost"
+              onClick={() => setShowHowToPlay(true)}
+            >
+              ❓ HOW TO PLAY
+            </MenuButton>
+
+            <MenuButton
+              variant="accent"
+              onClick={() => navigate('/settings')}
+              badge="ADMIN"
+            >
+              ⚙ ADMIN SETTINGS
+            </MenuButton>
+          </div>
+        ) : (
           <MenuButton
             variant="ghost"
             onClick={() => setShowHowToPlay(true)}
           >
             ❓ HOW TO PLAY
           </MenuButton>
-
-          <MenuButton
-            variant="ghost"
-            onClick={() => navigate('/settings')}
-          >
-            ⚙ SETTINGS
-          </MenuButton>
-        </div>
+        )}
 
         <MenuButton
           variant="danger"
