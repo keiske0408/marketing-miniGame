@@ -239,8 +239,19 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
           style={{ backgroundImage: 'url("/images/vineyard-estate.jpg")' }}
         />
 
+        <div className="velvet-curtain-top" aria-hidden="true" />
+        <div className="velvet-curtain-left" aria-hidden="true" />
+        <div className="velvet-curtain-right" aria-hidden="true" />
+        <div className="grape-cluster-left" aria-hidden="true">🍇</div>
+        <div className="grape-cluster-right" aria-hidden="true">🍇</div>
+
         <div className="vintage-gold-picture-frame" style={{ left: `${targetX}%` }}>
           <div className="frame-outer-molding">
+            <div className="frame-corner-acanthus tl" />
+            <div className="frame-corner-acanthus tr" />
+            <div className="frame-corner-acanthus bl" />
+            <div className="frame-corner-acanthus br" />
+            <div className="frame-grape-accent" />
             <div className="frame-canvas-inner">
               <VintageWineGlass isSilhouette={true} className="silhouette-target-glass" />
             </div>
@@ -252,6 +263,17 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
           className={`moving-glass-wrapper ${phase === 'matched' ? 'is-snapped' : ''}`}
         >
           <VintageWineGlass isSilhouette={false} className="moving-wine-glass" />
+        </div>
+
+        <div className="cellar-table-foreground" aria-hidden="true">
+          <div className="foreground-barrel">
+            <div className="barrel-gold-crest">⚜️</div>
+            <span className="barrel-grapes">🍇</span>
+          </div>
+          <div className="foreground-bottle-group">
+            <span className="bottle-grapes">🍇</span>
+            <div className="wine-bottle-silhouette"><span className="bottle-label-crest">CHÂTEAU</span></div>
+          </div>
         </div>
 
         {toast && (

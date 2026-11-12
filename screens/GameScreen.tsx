@@ -3,7 +3,6 @@ import { ArrowLeft, Ellipsis, Gamepad2, Trophy, UserRoundPlus } from 'lucide-rea
 import { Navigate, useNavigate } from 'react-router-dom';
 import { VintageWineMatch } from '../components/VintageWineMatch';
 import { TargetTimerGame } from '../components/TargetTimerGame';
-import { Modal } from '../components/Modal';
 import { useGameStore } from '../store/gameStore';
 import { useTranslation } from '../services/i18n';
 import type { GameMode } from '../types';
@@ -38,7 +37,6 @@ export function GameScreen() {
   const [scores, setScores] = useState(readScores);
   const [currentScore, setCurrentScore] = useState<number | null>(null);
   const [optionsOpen, setOptionsOpen] = useState(false);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const isPictureMatch = mode === 'picture-match';
   const target = settings.timerTargetMode === 'fixed' && Number.isFinite(settings.timerCustomTarget) && (settings.timerCustomTarget ?? 0) >= 1
     ? settings.timerCustomTarget! : 24;
@@ -72,7 +70,7 @@ export function GameScreen() {
           <details className="picture-options" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)} onKeyDown={(event) => { if (event.key === 'Escape') setOptionsOpen(false); }} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOptionsOpen(false); }}>
             <summary aria-label={t('More options')} title={t('More options')}><Ellipsis aria-hidden="true" /></summary>
             <div className="picture-options-list">
-              <button type="button" onClick={() => { setOptionsOpen(false); setShowLeaderboard(true); }}><Trophy aria-hidden="true" />{t('Leaderboard')}</button>
+              <button type="button" onClick={() => { setOptionsOpen(false); document.getElementById('game-leaderboard')?.scrollIntoView({ block: 'nearest' }); }}><Trophy aria-hidden="true" />{t('Leaderboard')}</button>
               <button type="button" onClick={newPlayer}><UserRoundPlus aria-hidden="true" />{t('Next player')}</button>
             </div>
           </details>
@@ -82,15 +80,14 @@ export function GameScreen() {
       <div className="kiosk-play-grid">
         <div className="kiosk-play-stage">
           {mode === 'target-timer' ? <TargetTimerGame target={target} playerName={player.name} onResult={saveScore} onNewPlayer={newPlayer} onExit={() => navigate('/game')} /> :
-            <VintageWineMatch paused={optionsOpen || showLeaderboard} onScoreUpdate={setCurrentScore} onGameOver={saveScore} onExit={() => navigate('/game')} onNewPlayer={newPlayer} />}
+            <VintageWineMatch paused={optionsOpen} onScoreUpdate={setCurrentScore} onGameOver={saveScore} onExit={() => navigate('/game')} onNewPlayer={newPlayer} />}
         </div>
-          {!isPictureMatch && <aside className="kiosk-leaderboard" aria-label={t('Leaderboard')}>
+        <aside id="game-leaderboard" className="kiosk-leaderboard" aria-label={t('Leaderboard')}>
           <div className="kiosk-leaderboard-heading"><Trophy aria-hidden="true" /><div><span>{t('This device')}</span><h2>{t('Leaderboard')}</h2></div><span>{t('Top 8')}</span></div>
           {scoreList}
-        </aside>}
+        </aside>
       </div>
       {!isPictureMatch && <footer className="kiosk-play-footer"><span>{t('One attempt per round')}</span></footer>}
-      <Modal title={t('Leaderboard')} isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} maxWidth="540px"><div className="picture-standings">{scoreList}</div></Modal>
     </main>
   );
 }
