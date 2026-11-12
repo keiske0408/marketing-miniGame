@@ -24,6 +24,8 @@ interface ToastState {
 }
 
 interface GameStoreState {
+  kioskPlayer: { id: string; name: string; email: string; phone: string } | null;
+  setKioskPlayer: (player: { id: string; name: string; email: string; phone: string } | null) => void;
   // Game Mode Selection
   selectedGameMode: GameMode;
   setGameMode: (mode: GameMode) => void;
@@ -85,6 +87,8 @@ const initialRunState: GameRunState = {
 export const useGameStore = create<GameStoreState>()(
   persist(
     (set, get) => ({
+      kioskPlayer: null,
+      setKioskPlayer: (player) => set({ kioskPlayer: player }),
       selectedGameMode: 'picture-match',
       setGameMode: (mode) => set({ selectedGameMode: mode }),
 

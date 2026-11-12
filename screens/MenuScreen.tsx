@@ -110,7 +110,7 @@ export function MenuScreen() {
             badge={`RESUME • ${run.score} PTS`}
             // subtitle="Continue your active stopwatch challenge"
           >
-            ▶ RESUME PERFECT POUR TIMER
+            ▶ RESUME TIME STOP
           </MenuButton>
         ) : (
           <MenuButton
@@ -120,7 +120,7 @@ export function MenuScreen() {
             badge="GAME 2 • FAST PACED"
             // subtitle="Hit the target second on the stopwatch to win"
           >
-            PLAY PERFECT POUR TIMER
+            PLAY TIME STOP
           </MenuButton>
         )}
 

@@ -3,7 +3,6 @@ import { Screen } from '../components/Screen';
 import { Tabs } from '../components/Tabs';
 import { Avatar } from '../components/Avatar';
 import { useGameStore } from '../store/gameStore';
-import { INITIAL_LEADERBOARD } from '../config/constants';
 import { supabaseService } from '../services/supabase';
 import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
@@ -13,7 +12,7 @@ export function LeaderboardScreen() {
   const user = useGameStore((state) => state.user);
   const highScore = useGameStore((state) => state.highScore);
   const [tab, setTab] = useState<'all' | 'picture-match' | 'target-timer'>('all');
-  const [entries, setEntries] = useState<LeaderboardEntry[]>(INITIAL_LEADERBOARD);
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadLeaderboard = useCallback(async (filterMode: 'all' | GameMode) => {
@@ -22,20 +21,7 @@ export function LeaderboardScreen() {
       const remote = await supabaseService.fetchLeaderboard(
         filterMode === 'all' ? undefined : filterMode
       );
-      if (remote.length > 0) {
-        setEntries(remote);
-      } else {
-        const filtered =
-          filterMode === 'all'
-            ? INITIAL_LEADERBOARD
-            : INITIAL_LEADERBOARD.filter((e) => e.gameMode === filterMode);
-        setEntries(
-          filtered.map((item, idx) => ({
-            ...item,
-            rank: idx + 1,
-          }))
-        );
-      }
+      setEntries(remote);
     } finally {
       setIsRefreshing(false);
     }
@@ -81,7 +67,7 @@ export function LeaderboardScreen() {
         tabs={[
           { id: 'all', label: 'All Challenges' },
           { id: 'picture-match', label: '🖼️ Picture Match' },
-          { id: 'target-timer', label: '⏱️ Perfect Pour' },
+          { id: 'target-timer', label: '⏱️ Time Stop' },
         ]}
         activeTab={tab}
         onChange={(id) => setTab(id as 'all' | 'picture-match' | 'target-timer')}
@@ -115,30 +101,42 @@ export function LeaderboardScreen() {
         </div>
 
         <div className="leaderboard-list">
-          {entries.map((item) => (
-            <div
-              key={`${item.userId}-${item.rank}`}
-              className={`leaderboard-row ${item.rank <= 3 ? 'is-podium' : ''}`}
-            >
-              <div className="col-rank">
-                <span className="rank-indicator">{getRankBadge(item.rank)}</span>
-              </div>
-              <div className="col-player">
-                <Avatar name={item.displayName} size="sm" />
-                <div className="player-meta">
-                  <span className="leaderboard-name">{item.displayName}</span>
-                  <span className="leaderboard-level">
-                    Vintage {item.level} •{' '}
-                    {item.gameMode === 'target-timer' ? '⏱️ Pour' : '🖼️ Match'}
-                  </span>
-                </div>
-              </div>
-              <div className="col-score">
-                <b>{item.score}</b>
-              </div>
-              <div className="col-acc">{item.accuracy}%</div>
+          {entries.length === 0 ? (
+            <div className="leaderboard-empty-state">
+              <span className="empty-icon">🍷</span>
+              <p className="empty-title">{isRefreshing ? 'Loading Standings...' : 'No Scores Yet'}</p>
+              <span className="empty-subtitle">
+                {isRefreshing
+                  ? 'Connecting to Château Cellar...'
+                  : 'Be the first sommelier to register a score in this tasting challenge!'}
+              </span>
             </div>
-          ))}
+          ) : (
+            entries.map((item) => (
+              <div
+                key={`${item.userId}-${item.rank}`}
+                className={`leaderboard-row ${item.rank <= 3 ? 'is-podium' : ''}`}
+              >
+                <div className="col-rank">
+                  <span className="rank-indicator">{getRankBadge(item.rank)}</span>
+                </div>
+                <div className="col-player">
+                  <Avatar name={item.displayName} size="sm" />
+                  <div className="player-meta">
+                    <span className="leaderboard-name">{item.displayName}</span>
+                    <span className="leaderboard-level">
+                      Vintage {item.level} •{' '}
+                      {item.gameMode === 'target-timer' ? '⏱️ Time Stop' : '🖼️ Match'}
+                    </span>
+                  </div>
+                </div>
+                <div className="col-score">
+                  <b>{item.score}</b>
+                </div>
+                <div className="col-acc">{item.accuracy}%</div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </Screen>

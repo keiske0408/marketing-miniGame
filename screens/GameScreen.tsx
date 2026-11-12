@@ -1,326 +1,79 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { ArrowLeft, Gamepad2, Trophy, UserRoundPlus } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { VintageWineMatch } from '../components/VintageWineMatch';
 import { TargetTimerGame } from '../components/TargetTimerGame';
-import { GameBoard } from '../components/GameBoard';
-import { Hud } from '../components/Hud';
-import { Overlay } from '../components/Overlay';
-import { Countdown } from '../components/Countdown';
-import { PauseMenu } from '../components/PauseMenu';
-import { ResultsScreen } from './ResultsScreen';
-import { SCENES } from '../images';
-import { getLevel } from '../levels';
 import { useGameStore } from '../store/gameStore';
-import { soundManager } from '../services/audio';
-import { haptics } from '../services/haptics';
 import type { GameMode } from '../types';
+
+interface LocalScore {
+  id: string;
+  name: string;
+  score: number;
+  mode: GameMode;
+}
+
+const STORAGE_KEY = 'ppm_kiosk_leaderboard';
+
+function readScores(): LocalScore[] {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(value) ? value.filter((entry): entry is LocalScore =>
+      entry && typeof entry.id === 'string' && typeof entry.name === 'string' && typeof entry.score === 'number' &&
+      (entry.mode === 'picture-match' || entry.mode === 'target-timer')) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function GameScreen() {
   const navigate = useNavigate();
-  const user = useGameStore((state) => state.user);
+  const player = useGameStore((state) => state.kioskPlayer);
+  const setKioskPlayer = useGameStore((state) => state.setKioskPlayer);
+  const mode = useGameStore((state) => state.selectedGameMode);
   const settings = useGameStore((state) => state.settings);
-  const selectedGameMode = useGameStore((state) => state.selectedGameMode);
-  const setGameMode = useGameStore((state) => state.setGameMode);
-  const decrementDemoRound = useGameStore((state) => state.decrementDemoRound);
-  const recordStoreMatch = useGameStore((state) => state.recordMatch);
+  const [scores, setScores] = useState(readScores);
+  const [currentScore, setCurrentScore] = useState<number | null>(null);
+  const target = settings.timerTargetMode === 'fixed' && Number.isFinite(settings.timerCustomTarget) && (settings.timerCustomTarget ?? 0) >= 1
+    ? settings.timerCustomTarget! : 24;
 
-  const [level, setLevel] = useState(1);
-  const [score, setScore] = useState(0);
-  const [matches, setMatches] = useState(0);
-  const [levelDone, setLevelDone] = useState(false);
-  const [showCountdown, setShowCountdown] = useState(true);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isGameOver, setIsGameOver] = useState(false);
-  const [accuracies, setAccuracies] = useState<number[]>([]);
-  const [runId, setRunId] = useState(1);
+  if (!player) return <Navigate to="/player" replace />;
 
-  const cfg = useMemo(
-    () => getLevel(level, settings.difficulty),
-    [level, settings.difficulty]
-  );
-  const [time, setTime] = useState(cfg.time);
-  const scene = SCENES[(level - 1) % SCENES.length];
-
-  // Ensure ambient lounge music is active
-  useEffect(() => {
-    soundManager.startMusic();
-  }, []);
-
-  // Duck music when paused or on game over so voice / victory chimes stand out
-  useEffect(() => {
-    if (isGameOver || isPaused) {
-      soundManager.duckMusic();
-    } else {
-      soundManager.unduckMusic();
-    }
-  }, [isGameOver, isPaused]);
-
-  // Main game countdown timer: strictly freezes when showCountdown, isPaused, levelDone, or isGameOver is true
-  useEffect(() => {
-    if (showCountdown || isPaused || levelDone || isGameOver) return;
-
-    let last = performance.now();
-    const id = window.setInterval(() => {
-      const now = performance.now();
-      const dt = (now - last) / 1000;
-      last = now;
-      setTime((t) => {
-        const next = Math.max(0, t - dt);
-        if (next <= 0) {
-          setIsGameOver(true);
-        }
-        return next;
-      });
-    }, 100);
-
-    return () => window.clearInterval(id);
-  }, [showCountdown, isPaused, levelDone, isGameOver]);
-
-  const advanceToNextLevel = useCallback(() => {
-    if (user?.isGuest && user.demoRoundsLeft <= 1) {
-      decrementDemoRound();
-      setIsGameOver(true);
-    } else {
-      const nextLv = level + 1;
-      setLevel(nextLv);
-      setMatches(0);
-      setLevelDone(false);
-      setTime(getLevel(nextLv, settings.difficulty).time);
-      setShowCountdown(true);
-    }
-  }, [user, level, settings.difficulty, decrementDemoRound]);
-
-  // Pause-aware level-done auto-advance timer
-  useEffect(() => {
-    if (!levelDone || isPaused || isGameOver) return;
-    const id = window.setTimeout(() => {
-      advanceToNextLevel();
-    }, 1300);
-    return () => window.clearTimeout(id);
-  }, [levelDone, isPaused, isGameOver, advanceToNextLevel]);
-
-  const handleMatch = (): boolean => {
-    setScore((s) => s + 1);
-    const m = matches + 1;
-    setMatches(m);
-
-    if (m < cfg.goal) return false;
-
-    setLevelDone(true);
-    soundManager.playLevelUp();
-    return true;
+  const saveScore = (score: number) => {
+    setCurrentScore(score);
+    const updated = [...scores, { id: crypto.randomUUID(), name: player.name, score, mode }];
+    const next = (['target-timer', 'picture-match'] as const).flatMap((gameMode) =>
+      updated.filter((entry) => entry.mode === gameMode)
+        .sort((first, second) => second.score - first.score).slice(0, 100));
+    setScores(next);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* Storage may be unavailable. */ }
   };
 
-  const handleAccuracy = (acc: number) => {
-    setAccuracies((prev) => [...prev, acc]);
-    recordStoreMatch(acc);
+  const newPlayer = () => {
+    setKioskPlayer(null);
+    navigate('/player', { replace: true });
   };
-
-  const handleRestart = (fresh = false, nextMode?: GameMode) => {
-    if (nextMode) {
-      setGameMode(nextMode);
-    }
-    const targetLevel = fresh ? 1 : level;
-    if (fresh) {
-      setScore(0);
-      setLevel(1);
-      setAccuracies([]);
-    }
-    setRunId((r) => r + 1);
-    setMatches(0);
-    setLevelDone(false);
-    setIsGameOver(false);
-    setIsPaused(false);
-    setTime(getLevel(targetLevel, settings.difficulty).time);
-    setShowCountdown(true);
-    soundManager.startMusic();
-  };
-
-  const handleCountdownComplete = useCallback(() => {
-    setShowCountdown(false);
-  }, []);
-
-  // Primary Mode: Vintage Wine Picture Match (Single objective, 3 lives, no timer, no levels)
-  if (selectedGameMode === 'picture-match') {
-    return (
-      <main className="app vintage-play-layout">
-        <VintageWineMatch
-          onScoreUpdate={(_s) => {
-            recordStoreMatch(100);
-          }}
-          onGameOver={(_finalScore) => {
-            if (user?.isGuest) {
-              decrementDemoRound();
-            }
-          }}
-          onExit={() => {
-            soundManager.playClick();
-            haptics.tick();
-            navigate(user ? '/menu' : '/home');
-          }}
-        />
-      </main>
-    );
-  }
-
-  if (isGameOver) {
-    return (
-      <main className="app">
-        <ResultsScreen
-          score={score}
-          level={level}
-          accuracies={accuracies}
-          gameMode={selectedGameMode}
-          onPlayAgain={() => {
-            if (user?.isGuest && user.demoRoundsLeft <= 0) {
-              navigate('/login', { state: { guestExhausted: true } });
-            } else {
-              handleRestart(true);
-            }
-          }}
-        />
-      </main>
-    );
-  }
+  const standings = scores.filter((entry) => entry.mode === mode).slice(0, 8);
 
   return (
-    <main className="app">
-      {/* Top Game Navigation & Mode Switcher Bar */}
-      <div className="game-top-bar">
-        <button
-          type="button"
-          className="back-btn"
-          onClick={() => {
-            soundManager.playClick();
-            haptics.tick();
-            navigate(user ? '/menu' : '/home');
-          }}
-        >
-          <span className="back-arrow">‹</span> Lounge
-        </button>
-
-        {/* <div className="mode-switch-pills" role="tablist" aria-label="Switch Game">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={selectedGameMode === 'picture-match'}
-            className={`mode-pill-btn ${selectedGameMode === 'picture-match' ? 'is-active' : ''}`}
-            onClick={() => {
-              if (selectedGameMode !== 'picture-match') {
-                soundManager.playClick();
-                handleRestart(true, 'picture-match');
-              }
-            }}
-          >
-            🖼️ Picture Match
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={selectedGameMode === 'target-timer'}
-            className={`mode-pill-btn ${selectedGameMode === 'target-timer' ? 'is-active' : ''}`}
-            onClick={() => {
-              if (selectedGameMode !== 'target-timer') {
-                soundManager.playClick();
-                handleRestart(true, 'target-timer');
-              }
-            }}
-          >
-            ⏱️ Perfect Pour
-          </button>
-        </div> */}
-
-        <button
-          type="button"
-          className="hud-pause-btn"
-          onClick={() => {
-            soundManager.playClick();
-            haptics.tick();
-            setIsPaused(true);
-          }}
-          aria-label="Pause game"
-          title="Pause game"
-        >
-          ⏸ Pause
-        </button>
+    <main className="kiosk-play">
+      <header className="kiosk-play-header">
+        <button type="button" className="kiosk-nav-button" onClick={() => navigate('/game')}><ArrowLeft aria-hidden="true" /><Gamepad2 aria-hidden="true" />Game menu</button>
+        {mode !== 'target-timer' && <div className="kiosk-player-name"><span>PLAYER</span><strong>{player.name}</strong></div>}
+        <button type="button" className="kiosk-new-player" onClick={newPlayer}><UserRoundPlus aria-hidden="true" /><span><strong>Next player</strong><small>Register &amp; play</small></span></button>
+      </header>
+      <div className="kiosk-play-title"><div><span>CHÂTEAU VINTAGE / GAME LOUNGE</span><h1>{mode === 'target-timer' ? 'Time Stop' : 'Vintage Picture Match'}</h1></div><div className="kiosk-current-score"><span>LAST SCORE</span><strong>{currentScore ?? '—'}</strong></div></div>
+      <div className="kiosk-play-grid">
+        <div className="kiosk-play-stage">
+          {mode === 'target-timer' ? <TargetTimerGame target={target} playerName={player.name} onResult={saveScore} /> :
+            <VintageWineMatch onScoreUpdate={setCurrentScore} onGameOver={saveScore} onExit={() => navigate('/game')} onNewPlayer={newPlayer} />}
+        </div>
+        <aside className="kiosk-leaderboard" aria-label="Leaderboard">
+          <div className="kiosk-leaderboard-heading"><Trophy aria-hidden="true" /><div><span>THIS DEVICE</span><h2>Leaderboard</h2></div><span>TOP 8</span></div>
+          {standings.length === 0 ? <p className="kiosk-empty">The top spot is waiting for you.</p> : <ol>{standings.map((entry, index) => <li key={entry.id}><span className="kiosk-rank">{String(index + 1).padStart(2, '0')}</span><strong>{entry.name}</strong><span>{entry.score}</span></li>)}</ol>}
+        </aside>
       </div>
-
-      <Hud
-        score={score}
-        level={level}
-        time={time}
-        maxTime={cfg.time}
-        matches={matches}
-        goal={cfg.goal}
-      />
-
-      <div className="stage">
-        {selectedGameMode === 'target-timer' ? (
-          <TargetTimerGame
-            key={`timer-${runId}-${level}`}
-            level={level}
-            difficulty={settings.difficulty}
-            active={!showCountdown && !isPaused && !levelDone}
-            onMatch={handleMatch}
-            onAccuracy={handleAccuracy}
-          />
-        ) : (
-          <GameBoard
-            key={`board-${runId}-${level}`}
-            scene={scene}
-            config={cfg}
-            active={!showCountdown && !isPaused && !levelDone}
-            onMatch={handleMatch}
-            onAccuracy={handleAccuracy}
-          />
-        )}
-
-        {showCountdown && (
-          <Countdown
-            paused={isPaused}
-            onComplete={handleCountdownComplete}
-          />
-        )}
-
-        {isPaused && (
-          <PauseMenu
-            onResume={() => setIsPaused(false)}
-            onRestart={() => handleRestart(false)}
-          />
-        )}
-
-        {levelDone && !isPaused && (
-          <Overlay
-            title={`Vintage ${level} Complete!`}
-            actions={
-              <button
-                type="button"
-                className="btn"
-                onClick={advanceToNextLevel}
-              >
-                Next Vintage
-              </button>
-            }
-          >
-            <p>Score: {score}. Preparing the next vintage challenge...</p>
-          </Overlay>
-        )}
-      </div>
-
-      <div className="controls">
-        <span className="hint">
-          {selectedGameMode === 'target-timer'
-            ? 'Click the button or press Spacebar to start & stop on the exact target second'
-            : 'Click, tap or press Spacebar to lock the vineyard slice into the frame'}
-        </span>
-        <button
-          type="button"
-          className="btn ghost"
-          onClick={() => handleRestart(true)}
-        >
-          ↺ Restart
-        </button>
-      </div>
+      <footer className="kiosk-play-footer"><span>{mode === 'target-timer' ? 'One attempt per round' : 'Vintage Picture Match'}</span></footer>
     </main>
   );
 }

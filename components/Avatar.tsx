@@ -9,7 +9,12 @@ export function Avatar({ name, isGuest = false, size = 'md', className = '' }: A
   const getInitials = (str: string) => {
     const parts = str.trim().split(/\s+/);
     if (parts.length === 0 || !parts[0]) return '?';
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    if (parts.length === 1) {
+      const single = parts[0];
+      return single.length >= 2
+        ? single.substring(0, 2).toUpperCase()
+        : single.toUpperCase();
+    }
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
@@ -19,7 +24,7 @@ export function Avatar({ name, isGuest = false, size = 'md', className = '' }: A
       aria-label={`Player avatar for ${name}`}
       title={name}
     >
-      <span className="avatar-initials">{isGuest ? '👤' : getInitials(name)}</span>
+      <span className="avatar-initials">{getInitials(name)}</span>
     </div>
   );
 }

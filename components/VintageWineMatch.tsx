@@ -9,13 +9,14 @@ interface VintageWineMatchProps {
   onScoreUpdate?: (score: number) => void;
   onGameOver?: (finalScore: number) => void;
   onExit?: () => void;
+  onNewPlayer?: () => void;
 }
 
 type PlayPhase = 'idle' | 'moving' | 'stopping' | 'matched' | 'missed' | 'gameover';
 
-export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageWineMatchProps) {
+export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlayer }: VintageWineMatchProps) {
   const settings = useGameStore((state) => state.settings);
-  const [lives, setLives] = useState(3);
+  const [lives, setLives] = useState(1);
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -34,30 +35,28 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
   const glassRef = useRef<HTMLDivElement>(null);
   const posRef = useRef(-12); // in percent (-12% offscreen to 112% offscreen)
 
-  const calculateSpeed = (count: number) => {
-    // For Option A (Every 2 matches):
-    const speedLevel = Math.floor(count / 2);
-    // Or for Option B (After first 2 matches):
-    // const speedLevel = Math.max(0, count - 2);
-    return Math.min(maxSpeed, baseSpeed + speedLevel * speedStep);
-  };
-
   // Calibrated arcade speed: smooth, flowing horizontal traverse
   const baseSpeed =
     settings.difficulty === 'chill' ? 54 : settings.difficulty === 'hard' ? 86 : 68;
   const tolerance =
     settings.difficulty === 'chill' ? 5.8 : settings.difficulty === 'hard' ? 3.4 : 4.5;
 
-  // Progressive speedup per successful match: speeds up after every match for increasing difficulty!
-  const speedStep = settings.difficulty === 'chill' ? 5.5 : settings.difficulty === 'hard' ? 8.5 : 7.0;
+  // Progressive speedup per 2 successful matches for increasing arcade challenge!
+  const speedStep = settings.difficulty === 'chill' ? 8.0 : settings.difficulty === 'hard' ? 14.0 : 11.0;
   const maxSpeed = settings.difficulty === 'chill' ? 120 : settings.difficulty === 'hard' ? 165 : 145;
+
+  const calculateSpeed = useCallback((count: number) => {
+    // Accelerates after every 2 matches: matches 1-2 = 1.0x, matches 3-4 = 1.2x, matches 5-6 = 1.3x...
+    const speedLevel = Math.floor(count / 2);
+    return Math.min(maxSpeed, baseSpeed + speedLevel * speedStep);
+  }, [baseSpeed, maxSpeed, speedStep]);
 
   const matchCountRef = useRef(0);
   const [matchCount, setMatchCount] = useState(0);
   const speedRef = useRef(baseSpeed);
 
   const phaseRef = useRef<PlayPhase>('moving');
-  const livesRef = useRef(3);
+  const livesRef = useRef(1);
   const scoreRef = useRef(0);
   const bestScoreRef = useRef(bestScore);
   const delayTimerRef = useRef<number | null>(null);
@@ -113,11 +112,10 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
       const points = 100 + (isExact ? 50 : 0);
       const newScore = scoreRef.current + points;
 
-      // Speed up every match for progressive difficulty!
+      // Speed up every 2 matches for progressive difficulty!
       matchCountRef.current += 1;
       const newCount = matchCountRef.current;
       setMatchCount(newCount);
-      // After:
       const nextSpeed = calculateSpeed(newCount);
       speedRef.current = nextSpeed;
       const speedMultiplier = (nextSpeed / baseSpeed).toFixed(1);
@@ -136,10 +134,11 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
         }
       }
 
+      const speedBadge = Math.floor(newCount / 2) > 0 ? ` (⚡ ${speedMultiplier}x Speed)` : '';
       setToast(
         isExact
-          ? `🍾 A PERFECT MATCH! +150 (⚡ ${speedMultiplier}x Speed)`
-          : `🍷 MATCH LOCKED! ${accuracy}% (+100) (⚡ ${speedMultiplier}x Speed)`
+          ? `🍾 A PERFECT MATCH! +150${speedBadge}`
+          : `🍷 MATCH LOCKED! ${accuracy}% (+100)${speedBadge}`
       );
       setConfettiBurst((b) => b + 1);
       setGamePhase('matched');
@@ -148,44 +147,36 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
       haptics.success();
 
       // Reset for next attempt while keeping score AND shift wine silhouette to a new position!
+      if (delayTimerRef.current) {
+        window.clearTimeout(delayTimerRef.current);
+      }
       delayTimerRef.current = window.setTimeout(() => {
         const nextX = pickNextTarget(targetXRef.current);
         targetXRef.current = nextX;
         setTargetX(nextX);
         resetGlassToStart();
-      }, 1500);
+      }, 1400);
     } else {
-      // MISS: LOSE ONE LIFE
-      const newLives = livesRef.current - 1;
-      setLives(newLives);
-      livesRef.current = newLives;
+      // MISS: ONE LIFE EXPENDED -> GAME OVER
+      setLives(0);
+      livesRef.current = 0;
 
       soundManager.playFail();
       haptics.fail();
 
-      if (newLives > 0) {
-        setToast(`Missed! ${newLives} ${newLives === 1 ? 'life' : 'lives'} remaining`);
-        setGamePhase('missed');
-
-        delayTimerRef.current = window.setTimeout(() => {
-          resetGlassToStart();
-        }, 1200);
-      } else {
-        // GAME OVER
-        setToast('No lives remaining!');
-        setGamePhase('gameover');
-        soundManager.duckMusic();
-        onGameOver?.(scoreRef.current);
-      }
+      setToast('Tasting Life Lost!');
+      setGamePhase('gameover');
+      soundManager.duckMusic();
+      onGameOver?.(scoreRef.current);
     }
-  }, [baseSpeed, maxSpeed, speedStep, tolerance, onScoreUpdate, onGameOver, resetGlassToStart, pickNextTarget]);
+  }, [baseSpeed, calculateSpeed, tolerance, onScoreUpdate, onGameOver, resetGlassToStart, pickNextTarget]);
 
-  const handleRestart = () => {
+  const handleRestart = useCallback(() => {
     if (delayTimerRef.current) {
       window.clearTimeout(delayTimerRef.current);
     }
-    setLives(3);
-    livesRef.current = 3;
+    setLives(1);
+    livesRef.current = 1;
     setScore(0);
     scoreRef.current = 0;
     matchCountRef.current = 0;
@@ -196,9 +187,14 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
     setTargetX(initialTarget);
     soundManager.unduckMusic();
     resetGlassToStart();
-  };
+  }, [baseSpeed, resetGlassToStart]);
 
-  // 60fps RequestAnimationFrame Loop
+  const handleStopRef = useRef(handleStop);
+  handleStopRef.current = handleStop;
+  const handleRestartRef = useRef(handleRestart);
+  handleRestartRef.current = handleRestart;
+
+  // 60fps RequestAnimationFrame Loop - isolated from render callback churn
   useEffect(() => {
     let raf = 0;
     let last = performance.now();
@@ -227,9 +223,9 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
         e.preventDefault();
         if (!e.repeat) {
           if (phaseRef.current === 'gameover') {
-            handleRestart();
+            handleRestartRef.current();
           } else {
-            handleStop();
+            handleStopRef.current();
           }
         }
       }
@@ -243,7 +239,7 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
         window.clearTimeout(delayTimerRef.current);
       }
     };
-  }, [handleStop]);
+  }, []);
 
   return (
     <div className="vintage-picture-match-container">
@@ -264,19 +260,16 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
         )}
 
         {/* Left: Life Indicator Cartouche */}
-        <div className="vintage-cartouche life-cartouche" aria-label={`Lives: ${lives} of 3`}>
+        <div className="vintage-cartouche life-cartouche" aria-label={`Life: ${lives} of 1`}>
           <span className="grape-mini-icon" aria-hidden="true">🍇</span>
           <span className="cartouche-label">Life</span>
           <div className="hearts-row">
-            {[1, 2, 3].map((heartIndex) => (
-              <span
-                key={heartIndex}
-                className={`heart-icon ${heartIndex <= lives ? 'is-alive' : 'is-lost'}`}
-                aria-hidden="true"
-              >
-                {heartIndex <= lives ? '❤️' : '🖤'}
-              </span>
-            ))}
+            <span
+              className={`heart-icon ${lives > 0 ? 'is-alive' : 'is-lost'}`}
+              aria-hidden="true"
+            >
+              {lives > 0 ? '❤️' : '🖤'}
+            </span>
           </div>
         </div>
 
@@ -423,7 +416,7 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
             <div className="gameover-crest">
               {/* <span className="gameover-icon">🍷</span> */}
               <h2 className="gameover-title">GAME OVER</h2>
-              <p className="gameover-sub">All 3 tasting lives used</p>
+              <p className="gameover-sub">Tasting life expended • Precision sommelier challenge</p>
             </div>
 
             <div className="gameover-glass-display">
@@ -442,6 +435,7 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit }: VintageW
             </div>
 
             <div className="gameover-actions-row">
+              {onNewPlayer && <button type="button" className="vintage-exit-modal-btn" onClick={onNewPlayer}>New player</button>}
               <button
                 type="button"
                 className="vintage-play-again-btn"

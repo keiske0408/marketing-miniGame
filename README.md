@@ -1,5 +1,19 @@
 # Perfect Picture Match — Marketing Event Arcade Game
 
+## Kiosk Flow and Privacy
+
+The kiosk starts with game selection, followed by player consent. Time Stop shows elapsed time and uses one attempt per round; retries are available until the promoter selects Next player. Settings controls the target (24 seconds by default) and whether name, email and phone are required. These settings are stored on the current device and are accessible without a login.
+
+Player registration details remain in memory until Next player or a page reload. Leaderboard names and scores are stored in the browser's local storage on that device, not synced between devices. The existing Supabase schema exposes profile data publicly; do not use it to collect personal information without implementing authenticated access and appropriate database policies. The consent text must be reviewed for the event's actual privacy requirements before deployment.
+
+Set `VITE_AVP_VIDEO_URL` to a browser-playable video file URL (for example, `/videos/avp.mp4` after adding the file under `public/videos/`) to enable Play AVP. Without a URL, the AVP screen shows a placeholder.
+
+### Portrait Tablet Layout
+
+The game menu and play screen are optimized for 1032 x 1376 portrait tablets. Portrait widths from 761px through 1100px place the leaderboard below the game stage; wider landscape screens retain the sidebar. Menu and game navigation controls use touch targets of at least 56px, visible keyboard focus, and reduced-motion support. New visitors see **Register & play**; **Next player / Register & play** clears the current player and opens fresh registration.
+
+For UI regression checks, verify both game menus, registration, timer start/stop/retry, player handoff, AVP, and admin navigation at 1032 x 1376, 1376 x 1032, and mobile widths. Run `npm run build` before pushing; Vercel uses the existing SPA rewrites and `dist` output.
+
 An interactive, mobile-first timing and reflex mini-game optimized for in-person marketing events, product showcases, and kiosk displays. Attendees scan a QR code, play a fast-paced puzzle challenge, compete on a live event leaderboard, and claim booth prizes.
 
 Deploys seamlessly to **Vercel** with full client-side SPA routing and serverless score validation.

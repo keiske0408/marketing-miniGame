@@ -1,188 +1,124 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Sliders, Wine, Clock } from 'lucide-react';
 import { Screen } from '../components/Screen';
-import { MenuButton } from '../components/MenuButton';
-import { Modal } from '../components/Modal';
 import { useGameStore } from '../store/gameStore';
-import { HOW_TO_PLAY_STEPS } from '../config/constants';
-import { soundManager } from '../services/audio';
-import { haptics } from '../services/haptics';
 import type { GameMode } from '../types';
 
 export function HomeScreen() {
   const navigate = useNavigate();
-  const user = useGameStore((state) => state.user);
-  const run = useGameStore((state) => state.run);
-  const selectedGameMode = useGameStore((state) => state.selectedGameMode);
   const setGameMode = useGameStore((state) => state.setGameMode);
-  const startRun = useGameStore((state) => state.startRun);
-  const [showHowToPlay, setShowHowToPlay] = useState(false);
-
-  useEffect(() => {
-    soundManager.startMusic();
-  }, []);
-
-  const handleSelectMode = (mode: GameMode) => {
-    soundManager.playClick();
-    haptics.tick();
+  const selectGame = (mode: GameMode) => {
     setGameMode(mode);
-  };
-
-  const handlePlayClick = (modeOverride?: GameMode) => {
-    const mode = modeOverride || selectedGameMode;
-    setGameMode(mode);
-    if (user) {
-      if (user.isGuest && user.demoRoundsLeft <= 0) {
-        navigate('/login', { state: { guestExhausted: true } });
-      } else {
-        if (!run.isActive || run.gameMode !== mode) {
-          startRun(true, mode);
-        }
-        navigate('/play');
-      }
-    } else {
-      navigate('/login');
-    }
+    navigate('/game');
   };
 
   return (
-    <Screen showEventBanner={true} className="home-screen">
-      <div className="wine-lounge-panel">
-        <div className="home-hero">
-          <div className="home-badge-row">
-            <span className="arcade-pill">🍷 SOMMELIER CHALLENGE</span>
-            <span className="live-status-pill">● TASTING BAR OPEN</span>
-          </div>
-
-          <h1 className="logo home-logo">CHÂTEAU VINTAGE</h1>
-          <p className="home-tagline">
-            Choose your wine challenge below, test your precision, and unlock complimentary tasting pours &amp; cellar rewards!
-          </p>
-        </div>
-
-        {/* Two Wine Games Selector Grid */}
-        <div className="game-mode-grid" role="radiogroup" aria-label="Select Game Mode">
-          <div
-            role="radio"
-            aria-checked={selectedGameMode === 'picture-match'}
-            tabIndex={0}
-            className={`game-mode-card ${selectedGameMode === 'picture-match' ? 'is-selected' : ''}`}
-            onClick={() => handleSelectMode('picture-match')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleSelectMode('picture-match');
-              }
-            }}
-          >
-            <div className="game-mode-top">
-              <span className="game-mode-icon">🍷</span>
-              <span className="game-mode-tag">GAME 1 • 3 LIVES</span>
-            </div>
-            <h3 className="game-mode-title">Vintage Picture Match</h3>
-            <p className="game-mode-desc">
-              Stop the moving wine glass at the perfect moment into the missing silhouette inside the ornate gold frame.
-            </p>
-            <span className="game-mode-select-indicator">
-              {selectedGameMode === 'picture-match' ? '✓ Selected' : 'Tap to Select'}
-            </span>
-          </div>
-
-          <div
-            role="radio"
-            aria-checked={selectedGameMode === 'target-timer'}
-            tabIndex={0}
-            className={`game-mode-card ${selectedGameMode === 'target-timer' ? 'is-selected' : ''}`}
-            onClick={() => handleSelectMode('target-timer')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleSelectMode('target-timer');
-              }
-            }}
-          >
-            <div className="game-mode-top">
-              <span className="game-mode-icon">⏱️</span>
-              <span className="game-mode-tag">GAME 2 • NEW</span>
-            </div>
-            <h3 className="game-mode-title">The Perfect Pour Timer</h3>
-            <p className="game-mode-desc">
-              Start the stopwatch and stop it on the exact target second to pour the winning vintage!
-            </p>
-            <span className="game-mode-select-indicator">
-              {selectedGameMode === 'target-timer' ? '✓ Selected' : 'Tap to Select'}
-            </span>
-          </div>
-        </div>
-
-        <div className="home-actions-card">
-          <MenuButton
-            variant={run.isActive && run.gameMode === selectedGameMode ? 'accent' : 'primary'}
-            onClick={() => handlePlayClick()}
-            className="btn-play-large"
-            badge={
-              run.isActive && run.gameMode === selectedGameMode
-                ? `RESUME • ${run.score} PTS`
-                : selectedGameMode === 'target-timer'
-                ? 'STOPWATCH'
-                : '3 LIVES'
-            }
-          >
-            {run.isActive && run.gameMode === selectedGameMode
-              ? selectedGameMode === 'target-timer'
-                ? '▶ RESUME PERFECT POUR TIMER'
-                : '▶ RESUME PICTURE MATCH'
-              : selectedGameMode === 'target-timer'
-              ? '🍷 PLAY PERFECT POUR TIMER'
-              : '🍷 PLAY PICTURE MATCH'}
-          </MenuButton>
-
-          {!user ? (
-            <MenuButton
-              variant="secondary"
-              onClick={() => navigate('/login')}
-              badge="INSTANT PASS"
-            >
-              🎟️ Register Tasting Pass / Sign In
-            </MenuButton>
-          ) : (
-            <MenuButton
-              variant="secondary"
-              onClick={() => navigate('/menu')}
-              badge={user.displayName}
-            >
-              🍇 Open Sommelier Lounge Menu
-            </MenuButton>
-          )}
-
-          <div className="home-secondary-grid">
-            <MenuButton variant="ghost" onClick={() => setShowHowToPlay(true)}>
-              ❓ How to Play
-            </MenuButton>
-            <MenuButton variant="ghost" onClick={() => navigate('/leaderboard')}>
-              🏆 Leaderboard
-            </MenuButton>
-          </div>
-        </div>
+    <Screen className="kiosk-selection vintage-landing-screen" maxWidth="980px">
+      {/* Top Vintage Vineyard Crest */}
+      <div className="vintage-brand-crest">
+        <div className="crest-insignia">🍇 CHÂTEAU VINTAGE ⚜️ GRAND CRU ARCADE</div>
       </div>
 
-      <Modal
-        title="How to Play & Win Wine Rewards"
-        isOpen={showHowToPlay}
-        onClose={() => setShowHowToPlay(false)}
-      >
-        <div className="how-to-play-list">
-          {HOW_TO_PLAY_STEPS.map((step, idx) => (
-            <div key={idx} className="how-step">
-              <h3 className="how-step-title">{step.title}</h3>
-              <p className="how-step-desc">{step.desc}</p>
-            </div>
-          ))}
-          <div className="how-tip-box">
-            🍾 <strong>Sommelier Tip:</strong> You can switch between <em>Vintage Picture Match</em> and <em>The Perfect Pour Timer</em> anytime from the Home screen or Lounge Menu!
+      <div className="vintage-landing-header">
+        <span className="landing-badge">SELECT YOUR TASTING CHALLENGE</span>
+        <h1 className="landing-title">The Tasting Lounge</h1>
+        <p className="landing-subtitle">
+          Test your split-second sommelier precision, climb the live event standings, and claim reserve tasting rewards.
+        </p>
+      </div>
+
+      {/* Ornate 2-Game Selection Grid */}
+      <div className="vintage-game-selection-grid">
+        {/* Game 1: Time Stop */}
+        <button
+          type="button"
+          className="vintage-selection-card time-stop-card"
+          onClick={() => selectGame('target-timer')}
+        >
+          <div className="card-top-tag">
+            <span className="game-num">CHALLENGE 01</span>
+            <span className="game-type-badge">
+              <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+              PRECISION TIMER
+            </span>
           </div>
-        </div>
-      </Modal>
+
+          <div className="card-media-stage">
+            <div className="wine-glow-backdrop" />
+            <img
+              src="/images/vintage-wine-glass.png"
+              alt="Vintage crystal wine glass"
+              className="card-wine-glass-preview"
+            />
+          </div>
+
+          <div className="card-content-footer">
+            <div className="card-title-row">
+              <h3>Time Stop</h3>
+              <ArrowRight className="card-arrow" aria-hidden="true" />
+            </div>
+            <p className="card-description">
+              Stop the pour clock at the exact designated target second with sommelier accuracy.
+            </p>
+            <span className="card-action-pill">SELECT GAME ↗</span>
+          </div>
+        </button>
+
+        {/* Game 2: Vintage Picture Match */}
+        <button
+          type="button"
+          className="vintage-selection-card picture-match-card"
+          onClick={() => selectGame('picture-match')}
+        >
+          <div className="card-top-tag">
+            <span className="game-num">CHALLENGE 02</span>
+            <span className="game-type-badge">
+              <Wine className="w-3.5 h-3.5" aria-hidden="true" />
+              WINE ALIGNMENT
+            </span>
+          </div>
+
+          <div className="card-media-stage picture-stage">
+            <img
+              src="/images/vintage-game-scene.jpg"
+              alt="Vintage vineyard estate picture match scene"
+              className="card-vineyard-preview"
+            />
+            <div className="picture-stage-overlay" />
+          </div>
+
+          <div className="card-content-footer">
+            <div className="card-title-row">
+              <h3>Vintage Picture Match</h3>
+              <ArrowRight className="card-arrow" aria-hidden="true" />
+            </div>
+            <p className="card-description">
+              Stop the moving Bordeaux wine glass right into the golden silhouette. Accelerates every 2 matches!
+            </p>
+            <span className="card-action-pill">SELECT GAME ↗</span>
+          </div>
+        </button>
+      </div>
+
+      {/* Art-Rich Ornate Admin Settings Medallion Button */}
+      <div className="vintage-landing-footer">
+        <button
+          type="button"
+          className="vintage-admin-medallion-btn"
+          onClick={() => navigate('/settings')}
+        >
+          <div className="medallion-inner">
+            <span className="medallion-gear" aria-hidden="true">
+              <Sliders className="w-5 h-5 text-gold" />
+            </span>
+            <div className="medallion-text">
+              <strong className="medallion-title">CELLAR CONTROLS &amp; ADMIN SETTINGS</strong>
+              <small className="medallion-desc">Calibrate pour targets, audio volumes &amp; device parameters</small>
+            </div>
+            <span className="medallion-flourish" aria-hidden="true">⚜️</span>
+          </div>
+        </button>
+      </div>
     </Screen>
   );
 }

@@ -37,7 +37,6 @@ export function LoginScreen() {
   const location = useLocation();
   const loginWithEmail = useGameStore((state) => state.loginWithEmail);
   const loginAsGuest = useGameStore((state) => state.loginAsGuest);
-  const loginAsAdmin = useGameStore((state) => state.loginAsAdmin);
 
   const [activeTab, setActiveTab] = useState<'signup' | 'signin' | 'guest'>('signup');
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -1,4 +1,4 @@
-import type { UserSettings, LeaderboardEntry } from '../types';
+import type { UserSettings } from '../types';
 
 export const EVENT_NAME =
   import.meta.env.VITE_EVENT_NAME || 'GRAND VINTAGE 2026 // WINE TASTING GALA';
@@ -26,17 +26,12 @@ export const DEFAULT_SETTINGS: UserSettings = {
   theme: 'auto',
   language: 'en',
   difficulty: 'normal',
-  timerTargetMode: 'dynamic',
-  timerCustomTarget: 5.0,
+  timerTargetMode: 'fixed',
+  timerCustomTarget: 24,
+  requirePlayerName: false,
+  requirePlayerEmail: false,
+  requirePlayerPhone: false,
 };
-
-export const INITIAL_LEADERBOARD: LeaderboardEntry[] = [
-  { rank: 1, userId: 'u-1', displayName: 'ChateauMaster', score: 38, accuracy: 98, level: 7, gameMode: 'picture-match' },
-  { rank: 2, userId: 'u-2', displayName: 'SommelierEva', score: 34, accuracy: 96, level: 6, gameMode: 'target-timer' },
-  { rank: 3, userId: 'u-3', displayName: 'VinoViper', score: 29, accuracy: 92, level: 5, gameMode: 'picture-match' },
-  { rank: 4, userId: 'u-4', displayName: 'PinotNoir99', score: 24, accuracy: 89, level: 4, gameMode: 'target-timer' },
-  { rank: 5, userId: 'u-5', displayName: 'GoldenCask', score: 19, accuracy: 85, level: 4, gameMode: 'picture-match' },
-];
 
 export const HOW_TO_PLAY_STEPS = [
   {
@@ -44,8 +39,8 @@ export const HOW_TO_PLAY_STEPS = [
     desc: 'Watch the crystal wine glass filled with Bordeaux red wine glide horizontally across the vineyard. Tap "Click to Stop" or press Spacebar at the exact moment it fits into the golden silhouette cutout in the picture frame! You have 3 tasting lives (hearts) — each miss costs 1 life. No timer, pure precision!',
   },
   {
-    title: 'Game 2: The Perfect Pour (Stopwatch Challenge)',
-    desc: 'Given a target time in seconds (e.g., 5.00s), press Start Pouring to start the clock, then tap Stop right on the target second! Stopping within ±0.10s wins the round, and ±0.02s earns a Perfect Vintage Bonus!',
+    title: 'Game 2: Time Stop',
+    desc: 'Start the round and stop as close as you can to the target time.',
   },
   {
     title: 'Claim Tasting & Bottle Rewards',

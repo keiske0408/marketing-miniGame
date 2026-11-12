@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { SplashScreen } from './screens/SplashScreen';
 import { HomeScreen } from './screens/HomeScreen';
+import { SelectedGameScreen } from './screens/SelectedGameScreen';
+import { PlayerConsentScreen } from './screens/PlayerConsentScreen';
+import { AvpScreen } from './screens/AvpScreen';
 import { LoginScreen } from './screens/LoginScreen';
 import { MenuScreen } from './screens/MenuScreen';
 import { GameScreen } from './screens/GameScreen';
@@ -45,8 +47,11 @@ export default function App() {
     <BrowserRouter>
       <div className="app-shell">
         <Routes>
-          <Route path="/" element={<SplashScreen />} />
+          <Route path="/" element={<HomeScreen />} />
           <Route path="/home" element={<HomeScreen />} />
+          <Route path="/game" element={<SelectedGameScreen />} />
+          <Route path="/player" element={<PlayerConsentScreen />} />
+          <Route path="/avp" element={<AvpScreen />} />
           <Route path="/login" element={<LoginScreen />} />
           <Route
             path="/menu"
@@ -56,14 +61,7 @@ export default function App() {
               </RequireAuth>
             }
           />
-          <Route
-            path="/play"
-            element={
-              <RequireAuth allowGuestDemo={true}>
-                <GameScreen />
-              </RequireAuth>
-            }
-          />
+          <Route path="/play" element={<GameScreen />} />
           <Route path="/settings" element={<SettingsScreen />} />
           <Route path="/leaderboard" element={<LeaderboardScreen />} />
           <Route
