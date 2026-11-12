@@ -1,7 +1,7 @@
 import type { UserSettings } from '../types';
 
 export const EVENT_NAME =
-  import.meta.env.VITE_EVENT_NAME || 'GRAND VINTAGE 2026 // WINE TASTING GALA';
+  import.meta.env?.VITE_EVENT_NAME || 'GRAND VINTAGE 2026 // WINE TASTING GALA';
 
 export const BRAND_COLORS = {
   primary: '#4A0718',   // Deep Burgundy
@@ -27,7 +27,10 @@ export const DEFAULT_SETTINGS: UserSettings = {
   language: 'en',
   difficulty: 'normal',
   timerTargetMode: 'fixed',
-  timerCustomTarget: 24,
+  timerCustomTarget: 23,
+  timerWinMin: 22.34,
+  timerWinMax: 23.99,
+  pictureSpeed: 1,
   requirePlayerName: false,
   requirePlayerEmail: false,
   requirePlayerPhone: false,
@@ -36,11 +39,11 @@ export const DEFAULT_SETTINGS: UserSettings = {
 export const HOW_TO_PLAY_STEPS = [
   {
     title: 'Game 1: Vintage Picture Match (Wine Edition)',
-    desc: 'Watch the crystal wine glass filled with Bordeaux red wine glide horizontally across the vineyard. Tap "Click to Stop" or press Spacebar at the exact moment it fits into the golden silhouette cutout in the picture frame! You have 3 tasting lives (hearts) — each miss costs 1 life. No timer, pure precision!',
+    desc: 'Stop the moving glass once by tapping Stop or pressing Space. Your result is the percentage of horizontal overlap with its outline. Full alignment earns 100%. One attempt per round.',
   },
   {
     title: 'Game 2: Time Stop',
-    desc: 'Start the round and stop as close as you can to the target time.',
+    desc: 'Start the round and stop as close as you can to the target time. The event host sets the winning minimum and maximum in Settings. Results are shown in seconds.',
   },
   {
     title: 'Claim Tasting & Bottle Rewards',

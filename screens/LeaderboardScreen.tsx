@@ -1,144 +1,43 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { Screen } from '../components/Screen';
 import { Tabs } from '../components/Tabs';
-import { Avatar } from '../components/Avatar';
 import { useGameStore } from '../store/gameStore';
-import { supabaseService } from '../services/supabase';
-import { soundManager } from '../services/audio';
-import { haptics } from '../services/haptics';
-import type { LeaderboardEntry, GameMode } from '../types';
+import { useTranslation } from '../services/i18n';
+import { formatEventScore, rankScores } from '../services/eventScores';
+import { useEventScores } from '../services/useEventScores';
+import type { GameMode } from '../types';
 
 export function LeaderboardScreen() {
-  const user = useGameStore((state) => state.user);
-  const highScore = useGameStore((state) => state.highScore);
-  const [tab, setTab] = useState<'all' | 'picture-match' | 'target-timer'>('all');
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const loadLeaderboard = useCallback(async (filterMode: 'all' | GameMode) => {
-    setIsRefreshing(true);
-    try {
-      const remote = await supabaseService.fetchLeaderboard(
-        filterMode === 'all' ? undefined : filterMode
-      );
-      setEntries(remote);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadLeaderboard(tab);
-  }, [tab, loadLeaderboard]);
-
-  const handleRefresh = () => {
-    soundManager.playClick();
-    haptics.tick();
-    loadLeaderboard(tab);
-  };
-
-  const getRankBadge = (rank: number) => {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
-    return `#${rank}`;
-  };
+  const t = useTranslation();
+  const mode = useGameStore((state) => state.selectedGameMode);
+  const [tab, setTab] = useState<GameMode>(mode);
+  const { scores, refresh, error } = useEventScores();
+  const entries = rankScores(scores, tab);
 
   return (
-    <Screen
-      title="Grand Vintage Standings"
-      subtitle="Top Sommeliers competing for Reserve Bottles & Tasting Vouchers"
-      showBack={true}
-      backTo={user ? '/menu' : '/home'}
-      headerRight={
-        <button
-          type="button"
-          className="refresh-btn"
-          onClick={handleRefresh}
-          aria-label="Refresh Leaderboard"
-          title="Refresh"
-        >
-          {isRefreshing ? '⌛' : '↻'}
-        </button>
-      }
-      className="leaderboard-screen"
-    >
-      <Tabs
-        tabs={[
-          { id: 'all', label: 'All Challenges' },
-          { id: 'picture-match', label: '🖼️ Picture Match' },
-          { id: 'target-timer', label: '⏱️ Time Stop' },
-        ]}
-        activeTab={tab}
-        onChange={(id) => setTab(id as 'all' | 'picture-match' | 'target-timer')}
-        className="leaderboard-tabs"
-      />
-
-      {/* Current User Standing Card */}
-      {user && highScore > 0 && (
-        <div className="current-user-rank-card">
-          <span className="rank-tag">YOUR PERSONAL BEST</span>
-          <div className="rank-info-row">
-            <Avatar name={user.displayName} isGuest={user.isGuest} size="sm" />
-            <div className="rank-details">
-              <span className="rank-player-name">{user.displayName}</span>
-              <span className="rank-player-score">
-                Best Score: <strong>{highScore} pts</strong> 
-              </span>
-            </div>
-            <div className="rank-medal">🍷</div>
-          </div>
-        </div>
-      )}
-
-      {/* Leaderboard Table */}
-      <div className="leaderboard-table-card">
-        <div className="leaderboard-header-row">
-          <span className="col-rank">Rank</span>
-          <span className="col-player">Sommelier</span>
-          <span className="col-score">Score</span>
-          <span className="col-acc">Precision</span>
-        </div>
-
-        <div className="leaderboard-list">
-          {entries.length === 0 ? (
-            <div className="leaderboard-empty-state">
-              <span className="empty-icon">🍷</span>
-              <p className="empty-title">{isRefreshing ? 'Loading Standings...' : 'No Scores Yet'}</p>
-              <span className="empty-subtitle">
-                {isRefreshing
-                  ? 'Connecting to Château Cellar...'
-                  : 'Be the first sommelier to register a score in this tasting challenge!'}
-              </span>
-            </div>
-          ) : (
-            entries.map((item) => (
-              <div
-                key={`${item.userId}-${item.rank}`}
-                className={`leaderboard-row ${item.rank <= 3 ? 'is-podium' : ''}`}
-              >
-                <div className="col-rank">
-                  <span className="rank-indicator">{getRankBadge(item.rank)}</span>
-                </div>
-                <div className="col-player">
-                  <Avatar name={item.displayName} size="sm" />
-                  <div className="player-meta">
-                    <span className="leaderboard-name">{item.displayName}</span>
-                    <span className="leaderboard-level">
-                      Vintage {item.level} •{' '}
-                      {item.gameMode === 'target-timer' ? '⏱️ Time Stop' : '🖼️ Match'}
-                    </span>
-                  </div>
-                </div>
-                <div className="col-score">
-                  <b>{item.score}</b>
-                </div>
-                <div className="col-acc">{item.accuracy}%</div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+    <Screen title={t('Leaderboard')} subtitle={t('This device')} showBack backTo="/game"
+      headerRight={<button type="button" className="kiosk-nav-button" aria-label={t('Refresh')} title={t('Refresh')} onClick={refresh}><RefreshCw aria-hidden="true" /></button>}
+      className="leaderboard-screen">
+      <Tabs tabs={[
+        { id: 'picture-match', label: t('Picture match') },
+        { id: 'target-timer', label: 'Time Stop' },
+      ]} activeTab={tab} onChange={(id) => {
+        if (id === 'picture-match' || id === 'target-timer') setTab(id);
+      }} />
+      <section className="kiosk-leaderboard" role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+        <h2>{tab === 'picture-match' ? t('Picture match') : 'Time Stop'}</h2>
+        <p className="leaderboard-rule">{t(tab === 'picture-match' ? 'Highest match percentage first' : 'Closest to each round’s target first')}</p>
+        {error ? <p role="alert">{error}</p> : entries.length === 0
+          ? <p className="kiosk-empty">{t('The top spot is waiting for you.')}</p>
+          : <ol>{entries.map((entry, index) => (
+            <li key={entry.id}>
+              <span className="kiosk-rank">{index + 1}</span>
+              <div><strong>{entry.name}</strong>{entry.mode === 'target-timer' && <small className="leaderboard-target">{t('Event target')}: {entry.target.toFixed(2)}s</small>}</div>
+              <span>{formatEventScore(entry)}</span>
+            </li>
+          ))}</ol>}
+      </section>
     </Screen>
   );
 }

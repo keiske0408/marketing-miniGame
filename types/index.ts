@@ -29,6 +29,9 @@ export interface UserSettings {
   // Event Host / Admin settings for Perfect Pour Timer
   timerTargetMode?: TimerTargetMode; // 'dynamic' (randomized each round) or 'fixed'
   timerCustomTarget?: number;        // e.g. 5.0, 3.0, 7.0 seconds
+  timerWinMin?: number;
+  timerWinMax?: number;
+  pictureSpeed?: number;
   requirePlayerName?: boolean;
   requirePlayerEmail?: boolean;
   requirePlayerPhone?: boolean;

@@ -1,4 +1,5 @@
 import { useGameStore } from '../store/gameStore';
+import type { Language } from '../types';
 
 const tagalog: Record<string, string> = {
   'Back': 'Bumalik',
@@ -113,9 +114,39 @@ const tagalog: Record<string, string> = {
   'Cancel': 'Kanselahin',
   'Yes, Delete All My Data': 'Oo, burahin ang datos ko',
   'Coming soon': 'Abangan',
+  'Last time': 'Huling oras',
+  'Your time': 'Iyong oras',
+  'Match percentage': 'Porsiyento ng tugma',
+  'Highest match percentage first': 'Pinakamataas na porsiyento ng tugma muna',
+  'Closest to each round’s target first': 'Pinakamalapit sa target ng bawat round muna',
+  'View leaderboard': 'Tingnan ang mga nangunguna',
+  'Refresh': 'I-refresh',
+  'Winning minimum (seconds)': 'Pinakamababang panalong oras (segundo)',
+  'Winning maximum (seconds)': 'Pinakamataas na panalong oras (segundo)',
+  'Saved winning range (inclusive)': 'Naka-save na panalong saklaw (kasama ang mga hangganan)',
+  'Enter a target from 1 to 300 seconds and an ordered winning range from 0 to 300 seconds.': 'Maglagay ng target mula 1 hanggang 300 segundo at panalong saklaw mula 0 hanggang 300 segundo, mula mababa hanggang mataas.',
+  'Save Time Stop rules': 'I-save ang mga tuntunin ng Time Stop',
+  'Event controls saved.': 'Na-save ang mga kontrol.',
+  'Picture Match speed': 'Bilis ng pagtugma ng larawan',
+  'Lower is slower. Applies alongside difficulty. One attempt per round.': 'Mas mababa, mas mabagal. Kasama ang napiling antas. Isang subok bawat round.',
+  'Choose the language shown throughout the game.': 'Piliin ang wikang gagamitin sa buong laro.',
+  'Selected': 'Napili',
+  'Background track': 'Musikang pang-background',
+  'Looping': 'Paulit-ulit',
+  'Cannot access leaderboard. Check browser storage.': 'Hindi ma-access ang leaderboard. Suriin ang browser storage.',
+  'Cannot measure picture alignment. Please reload the game.': 'Hindi masukat ang tugma ng larawan. Paki-reload ang laro.',
+  'Background audio could not be played. Check the MP3 file.': 'Hindi mapatugtog ang musikang pang-background. Suriin ang MP3 file.',
+  'Your browser does not support video playback.': 'Hindi suportado ng browser ang pag-play ng video.',
+  'Video could not be played. Check the file or use a direct MP4 URL without a sign-in page.': 'Hindi ma-play ang video. Suriin ang file o gumamit ng direktang MP4 URL na hindi nangangailangan ng pag-sign in.',
+  'Retry video': 'Subukang muli ang video',
+  'Game navigation': 'Pag-navigate sa laro',
 };
+
+export function translate(text: string, language: Language) {
+  return language === 'tl' ? tagalog[text] ?? text : text;
+}
 
 export function useTranslation() {
   const language = useGameStore((state) => state.settings.language);
-  return (text: string) => language === 'tl' ? tagalog[text] ?? text : text;
+  return (text: string) => translate(text, language);
 }

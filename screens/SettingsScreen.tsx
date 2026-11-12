@@ -7,7 +7,8 @@ import { MenuButton } from '../components/MenuButton';
 import { Modal } from '../components/Modal';
 import { useGameStore } from '../store/gameStore';
 import { useTranslation } from '../services/i18n';
-import type { Difficulty, Language, ThemeMode } from '../types';
+import type { Difficulty, ThemeMode } from '../types';
+import { displayedSeconds, timerRules, validTimerRules } from '../services/eventRules';
 
 export function SettingsScreen() {
   const t = useTranslation();
@@ -20,10 +21,38 @@ export function SettingsScreen() {
   const updateDisplayName = useGameStore((state) => state.updateDisplayName);
   const deleteAccountData = useGameStore((state) => state.deleteAccountData);
   const logout = useGameStore((state) => state.logout);
+  const rules = timerRules(settings);
+  const [timerDraft, setTimerDraft] = useState({
+    target: rules.target.toFixed(2), winMin: rules.winMin.toFixed(2), winMax: rules.winMax.toFixed(2),
+  });
+  const [timerError, setTimerError] = useState(false);
 
   const [editName, setEditName] = useState(user?.displayName || '');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [modalContent, setModalContent] = useState<{ title: string; body: string } | null>(null);
+
+  const saveTimerRules = (event: React.FormEvent) => {
+    event.preventDefault();
+    const next = {
+      target: Number(timerDraft.target), winMin: Number(timerDraft.winMin), winMax: Number(timerDraft.winMax),
+    };
+    if (Object.values(timerDraft).some((value) => !value.trim()) || !validTimerRules(next)) {
+      setTimerError(true);
+      return;
+    }
+    const normalized = {
+      target: displayedSeconds(next.target), winMin: displayedSeconds(next.winMin), winMax: displayedSeconds(next.winMax),
+    };
+    updateSettings({
+      timerTargetMode: 'fixed', timerCustomTarget: normalized.target,
+      timerWinMin: normalized.winMin, timerWinMax: normalized.winMax,
+    });
+    setTimerDraft({
+      target: normalized.target.toFixed(2), winMin: normalized.winMin.toFixed(2), winMax: normalized.winMax.toFixed(2),
+    });
+    setTimerError(false);
+    useGameStore.getState().showToast(t('Event controls saved.'), 'success');
+  };
 
   const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,41 +75,57 @@ export function SettingsScreen() {
       className="settings-screen"
     >
       <section className="settings-section">
-        <div className="settings-card setting-row">
-          <label htmlFor="lang-select" className="setting-row-label">{t('Language')}</label>
-          <select id="lang-select" className="select-input" value={settings.language === 'tl' ? 'tl' : 'en'} onChange={(event) => updateSettings({ language: event.target.value as Language })}>
-            <option value="en">English</option>
-            <option value="tl">Tagalog</option>
-          </select>
+        <h2 className="section-title">{t('Event controls')}</h2>
+        <div className="settings-card">
+          <form className="event-timer-form" onSubmit={saveTimerRules} noValidate>
+            <h3>Time Stop</h3>
+            {([
+              ['target', 'Time Stop target (seconds)'],
+              ['winMin', 'Winning minimum (seconds)'],
+              ['winMax', 'Winning maximum (seconds)'],
+            ] as const).map(([field, label]) => (
+              <div className="setting-row" key={field}>
+                <label htmlFor={`timer-${field}`} className="setting-row-label">{t(label)}</label>
+                <input id={`timer-${field}`} type="number" inputMode="decimal" min={field === 'target' ? 1 : 0} max="300" step="0.01"
+                  value={timerDraft[field]} onChange={(event) => setTimerDraft({ ...timerDraft, [field]: event.target.value })}
+                  aria-invalid={timerError} aria-describedby={timerError ? 'timer-settings-error' : 'timer-range-indicator'}
+                  className="form-input" />
+              </div>
+            ))}
+            <p id="timer-range-indicator" className="settings-hint" aria-live="polite">
+              {t('Saved winning range (inclusive)')}: <strong>{rules.winMin.toFixed(2)}s – {rules.winMax.toFixed(2)}s</strong>
+            </p>
+            {timerError && <p id="timer-settings-error" className="text-danger" role="alert">{t('Enter a target from 1 to 300 seconds and an ordered winning range from 0 to 300 seconds.')}</p>}
+            <button type="submit" className="btn small-btn">{t('Save Time Stop rules')}</button>
+          </form>
+          <div className="picture-speed-setting">
+            <Slider label={t('Picture Match speed')} value={settings.pictureSpeed ?? 1}
+              min={0.25} max={2} step={0.05} unit="×" onChange={(pictureSpeed) => updateSettings({ pictureSpeed })} />
+            <p className="settings-hint">{t('Lower is slower. Applies alongside difficulty. One attempt per round.')}</p>
+          </div>
+          <Toggle label={t('Require player name')} checked={Boolean(settings.requirePlayerName)}
+            onChange={(value) => updateSettings({ requirePlayerName: value })} />
+          <Toggle label={t('Require player email')} checked={Boolean(settings.requirePlayerEmail)}
+            onChange={(value) => updateSettings({ requirePlayerEmail: value })} />
+          <Toggle label={t('Require player phone number')} checked={Boolean(settings.requirePlayerPhone)}
+            onChange={(value) => updateSettings({ requirePlayerPhone: value })} />
         </div>
       </section>
-      {/* Audio Section */}
+
       <section className="settings-section">
-        <h2 className="section-title">{t('Audio')}</h2>
+        <h2 className="section-title" id="language-heading">{t('Language')}</h2>
         <div className="settings-card">
-          <Slider
-            label={t('Master Volume')}
-            value={settings.masterVolume}
-            disabled={settings.muted}
-            onChange={(val) => updateSettings({ masterVolume: val })}
-          />
-          <Slider
-            label={t('Music Volume')}
-            value={settings.musicVolume}
-            disabled={settings.muted}
-            onChange={(val) => updateSettings({ musicVolume: val })}
-          />
-          <Slider
-            label={t('SFX Volume')}
-            value={settings.sfxVolume}
-            disabled={settings.muted}
-            onChange={(val) => updateSettings({ sfxVolume: val })}
-          />
-          <Toggle
-            label={t('Mute audio')}
-            checked={settings.muted}
-            onChange={(val) => updateSettings({ muted: val })}
-          />
+          <p className="settings-hint">{t('Choose the language shown throughout the game.')}</p>
+          <div className="language-options" role="group" aria-labelledby="language-heading">
+            {(['en', 'tl'] as const).map((language) => (
+              <button key={language} type="button" lang={language} aria-pressed={settings.language === language}
+                onClick={() => updateSettings({ language })}>
+                <strong>{language === 'en' ? 'English' : 'Tagalog'}</strong>
+                <span>{language === 'en' ? 'Play in English' : 'Maglaro sa Tagalog'}</span>
+                {settings.language === language && <small>{t('Selected')}</small>}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -132,32 +177,6 @@ export function SettingsScreen() {
             </select>
           </div>
 
-        </div>
-      </section>
-
-      {/* Event Host & Booth Controls */}
-      <section className="settings-section">
-        <h2 className="section-title">{t('Event controls')}</h2>
-        <div className="settings-card">
-          <div className="setting-row">
-            <label htmlFor="timer-target" className="setting-row-label">{t('Time Stop target (seconds)')}</label>
-            <input id="timer-target" type="number" min="1" max="300" step="0.1"
-              defaultValue={settings.timerTargetMode === 'fixed' ? settings.timerCustomTarget ?? 24 : 24}
-              onBlur={(event) => {
-                const value = Number(event.currentTarget.value);
-                if (Number.isFinite(value) && value >= 1 && value <= 300) {
-                  updateSettings({ timerTargetMode: 'fixed', timerCustomTarget: value });
-                } else {
-                  event.currentTarget.value = String(settings.timerTargetMode === 'fixed' ? settings.timerCustomTarget ?? 24 : 24);
-                }
-              }} className="form-input" />
-          </div>
-          <Toggle label={t('Require player name')} checked={Boolean(settings.requirePlayerName)}
-            onChange={(value) => updateSettings({ requirePlayerName: value })} />
-          <Toggle label={t('Require player email')} checked={Boolean(settings.requirePlayerEmail)}
-            onChange={(value) => updateSettings({ requirePlayerEmail: value })} />
-          <Toggle label={t('Require player phone number')} checked={Boolean(settings.requirePlayerPhone)}
-            onChange={(value) => updateSettings({ requirePlayerPhone: value })} />
         </div>
       </section>
 
@@ -252,6 +271,19 @@ export function SettingsScreen() {
           </button>
         </div>
       </section>
+      <section className="settings-section">
+        <h2 className="section-title">{t('Audio')}</h2>
+        <div className="settings-card">
+          <p className="settings-hint">{t('Background track')}: Gvi Avp 2026 (Final) 2.mp3 · {t('Looping')}</p>
+          <Slider label={t('Master Volume')} value={settings.masterVolume} disabled={settings.muted}
+            onChange={(masterVolume) => updateSettings({ masterVolume })} />
+          <Slider label={t('Music Volume')} value={settings.musicVolume} disabled={settings.muted}
+            onChange={(musicVolume) => updateSettings({ musicVolume })} />
+          <Slider label={t('SFX Volume')} value={settings.sfxVolume} disabled={settings.muted}
+            onChange={(sfxVolume) => updateSettings({ sfxVolume })} />
+          <Toggle label={t('Mute audio')} checked={settings.muted} onChange={(muted) => updateSettings({ muted })} />
+        </div>
+      </section>
 
       {/* Delete Data Confirmation Modal */}
       <Modal
@@ -287,4 +319,3 @@ export function SettingsScreen() {
     </Screen>
   );
 }
-

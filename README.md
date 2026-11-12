@@ -2,11 +2,30 @@
 
 ## Kiosk Flow and Privacy
 
-The kiosk starts with game selection, followed by player consent. Time Stop shows elapsed time and uses one attempt per round; retries are available until the promoter selects Next player. Settings controls the target (24 seconds by default) and whether name, email and phone are required. These settings are stored on the current device and are accessible without a login.
+The kiosk starts with game selection, followed by player consent. Both games use **one stop per round**. Next player is the primary result action; Play again remains a small, explicit secondary action. Results cannot be dismissed with Escape, a backdrop tap, or a close button.
+
+- **Picture Match:** stop the moving glass once. The result is horizontal overlap with its outline, from 0% to 100%; only complete alignment wins. Partial overlap is rounded down so it never appears as a false 100%. Settings provides a 0.25x–2x speed multiplier alongside difficulty.
+- **Time Stop:** results and leaderboards show elapsed seconds to two decimal places, not points. New devices default to a 23.00s target and an inclusive winning range of **22.34s–23.99s**. Event controls lets the host save a target (1–300s) and independent minimum/maximum winning times (0–300s). Judging uses the same hundredths shown on screen. Settings are snapshotted at round start.
+- **Standings:** the in-game Top 8 and the standalone leaderboard share device-local results. Picture Match ranks highest percentage first. Time Stop ranks closest to each round's recorded target first, even if the host later changes the target. Ties favor earlier results. Up to 100 results per game are retained.
+- **Upgrade:** legacy kiosk points and the old cumulative picture best are cleared once on first use of the new event leaderboard. Historical remote scores are not deleted or converted. Existing valid saved targets and unrelated preferences are preserved; new settings gain defaults.
+- **Settings:** Event controls is first and Audio is last. English/Tagalog language selection updates the kiosk immediately and persists on the device. Registration requirements remain configurable without a login.
 
 Player registration details remain in memory until Next player or a page reload. Leaderboard names and scores are stored in the browser's local storage on that device, not synced between devices. The existing Supabase schema exposes profile data publicly; do not use it to collect personal information without implementing authenticated access and appropriate database policies. The consent text must be reviewed for the event's actual privacy requirements before deployment.
 
-Set `VITE_AVP_VIDEO_URL` to a browser-playable video file URL (for example, `/videos/avp.mp4` after adding the file under `public/videos/`) to enable Play AVP. Without a URL, the AVP screen shows a placeholder.
+### AVP video and background music
+
+The supplied media is already configured:
+
+- Video: [`public/gvi-avp-2026.mp4`](./public/gvi-avp-2026.mp4), an optimized 1280x720 H.264/AAC MP4 with fast-start metadata (about 10.7 MB). **Play AVP works without an environment variable.**
+- Background music: [`public/Gvi Avp 2026 (Final) 2.mp3`](<./public/Gvi Avp 2026 (Final) 2.mp3>), looping after the first user interaction. Master/Music volume, mute, and result ducking apply; procedural sound effects remain separate.
+- Background music pauses while AVP plays and resumes on pause/end/exit. AVP follows master volume and mute. Media failures show an explicit error/retry rather than a placeholder.
+- The original MOV is preserved locally, ignored by Git, and excluded from production output. Only the optimized MP4 and MP3 are deployed, outside the JavaScript bundle.
+
+**Using a video from SharePoint:** download/export the file from SharePoint as a browser-ready H.264/AAC `.mp4`. Replace `public/gvi-avp-2026.mp4`, then commit and deploy. Alternatively put the MP4 at `public/videos/avp.mp4` and set `VITE_AVP_VIDEO_URL=/videos/avp.mp4` in local configuration and Vercel Project Settings, then redeploy.
+
+For online hosting, upload the MP4 to a media/static host you control and set `VITE_AVP_VIDEO_URL` to its **direct HTTPS file URL**. It must return video bytes without an authentication prompt, viewer page, or expiring sharing token, and should support byte-range requests. A normal SharePoint sharing/viewer link usually does not meet these requirements.
+
+Bundled media needs no SharePoint connection or login. A deployed site still needs internet for its initial download; guaranteed offline playback after a browser restart is not implemented. For a disconnected event, serve the built site locally on the event device and test playback beforehand.
 
 ### Portrait Tablet Layout
 
@@ -14,7 +33,7 @@ The game menu and play screen are optimized for 1032 x 1376 portrait tablets. Po
 
 For UI regression checks, verify both game menus, registration, timer start/stop/retry, player handoff, AVP, and admin navigation at 1032 x 1376, 1376 x 1032, and mobile widths. Run `npm run build` before pushing; Vercel uses the existing SPA rewrites and `dist` output.
 
-Time Stop shows the score in a result dialog. Picture Match shows a brief points overlay after each successful match and automatically resumes after one second; only game over opens a result dialog. Its play screen keeps one score display and a Stop button, with a decorative wine-themed frame and an always-visible leaderboard beside the stage on desktop or below it on portrait tablets and phones. Player switching is in the options menu; opening options pauses the glass. Registration keeps the full Privacy Notice behind View more details and requires a separate consent checkbox. Settings includes a persistent English/Tagalog language selector for the kiosk flow.
+Both games show **Congratulations!** for a win and **Thank you for playing!** otherwise, with percentages or seconds in the result dialog. Picture Match keeps the decorative wine-themed stage and leaderboard beside it on desktop or below it on portrait tablets/phones. Both play headers have a direct **Next player** control. Registration keeps the full Privacy Notice behind View more details and requires a separate consent checkbox.
 
 An interactive, mobile-first timing and reflex mini-game optimized for in-person marketing events, product showcases, and kiosk displays. Attendees scan a QR code, play a fast-paced puzzle challenge, compete on a live event leaderboard, and claim booth prizes.
 
@@ -51,6 +70,12 @@ npm run dev
 ```bash
 npm run build
 ```
+
+### 4. Rule and storage regression tests
+```bash
+npm test
+```
+Uses the existing TypeScript package and Node's built-in test runner (Node 22.15+). Covers overlap percentages, inclusive timing boundaries, settings normalization, ranking, legacy clearing, and storage errors.
 
 ---
 
@@ -89,6 +114,7 @@ cp .env.example .env
 | `VITE_SUPABASE_ANON_KEY` | Public anonymous client key | Client |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role secret (bypasses RLS for score submission) | Serverless API Only |
 | `VITE_EVENT_NAME` | Name displayed on live banners & splash | Optional (Client) |
+| `VITE_AVP_VIDEO_URL` | Optional direct video URL; defaults to `/gvi-avp-2026.mp4` | Optional (Client) |
 
 > **Offline / Demo Resilience**: If Supabase environment variables are omitted, the game automatically operates in **offline demo mode** using local mock profiles, standings, and vouchers.
 
@@ -105,8 +131,8 @@ cp .env.example .env
 - To replace scenes with actual event photos or sponsor banners, swap `src` with URL strings or imported image assets (`aspect-ratio: 16:10`).
 
 ### 3. Custom Audio & Sound Effects
-- By default, [`src/services/audio.ts`](./src/services/audio.ts) generates procedural 8-bit sound effects using the Web Audio API without requiring external audio downloads.
-- To substitute your own brand sound effects, drop `.wav` or `.mp3` files into `/public/audio/` as documented in [`public/audio/README.md`](./public/audio/README.md).
+- [`services/audio.ts`](./services/audio.ts) generates procedural sound effects and loops the supplied MP3 using the Web Audio API for volume routing.
+- See [`public/audio/README.md`](./public/audio/README.md) for the configured track and instructions for customizing audio. Dropping extra files into that folder does not automatically override sound effects.
 
 ---
 
@@ -117,9 +143,12 @@ cp .env.example .env
 - [ ] **Guest Demo Round**: Tap "Play as Guest", finish 1 round; verify results prompt asks to create an account to save score.
 - [ ] **Account Creation**: Enter display name and email; ensure validation flags invalid emails and requires terms consent.
 - [ ] **Deep Link Refresh**: Navigate to `/menu` or `/settings` and refresh the browser; ensure the page reloads correctly without a 404 error.
-- [ ] **Gameplay & Physics**: Tap anywhere on the board or press Spacebar; verify the slice decelerates, locks into the gap, and spawns confetti.
-- [ ] **Pause Menu**: Tap the `⏸` button in the HUD; verify the game timer and animation freeze until resumed.
+- [ ] **Picture Match**: Stop once by button, board tap, or Spacebar. Verify one percentage result, no automatic continuation, and no duplicate submission on rapid taps.
+- [ ] **Time Stop**: Save target/bounds, stop at each boundary, and verify displayed seconds agree with the winning outcome.
+- [ ] **Player handoff**: Verify Next player receives result-dialog focus and clears registration. Escape/backdrop must not restart. Play again must be explicit and secondary.
+- [ ] **Standings**: Verify shared in-game/standalone results, percentage/seconds units, and target-relative timer ordering.
+- [ ] **Media**: Verify AVP plays with no URL override, MP3 loops, mute/volumes work, and background audio pauses during video playback.
+- [ ] **Language/layout**: Switch English/Tagalog and check settings, registration, results, and standings at 1032 x 1376, landscape, and mobile.
 - [ ] **Haptics**: On supported Android devices, verify vibrations trigger on button taps and successful matches.
 - [ ] **Settings Persistence**: Change theme from Auto to Dark or adjust SFX volume; refresh the page and verify preferences persist.
 - [ ] **Lighthouse Accessibility**: Ensure high-contrast colors, visible focus rings, and screen-reader ARIA roles meet accessibility standards ($\ge 90$).
-

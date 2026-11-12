@@ -1,36 +1,16 @@
 import type { UserSettings } from '../types';
 
-interface MusicChord {
-  bass: number;
-  pad: number[];
-  chime: number;
-}
-
-// Sophisticated 8-bar Wine Lounge Progression (chilled tempo, ~3.2s per bar)
-const WINE_LOUNGE_CHORDS: MusicChord[] = [
-  { bass: 87.31, pad: [220.0, 261.63, 329.63, 392.0], chime: 523.25 }, // Fmaj7 (F2 bass, A3, C4, E4, G4)
-  { bass: 82.41, pad: [196.0, 246.94, 293.66, 392.0], chime: 493.88 }, // Em7 (E2 bass, G3, B3, D4, G4)
-  { bass: 73.42, pad: [174.61, 220.0, 261.63, 329.63], chime: 440.0 },  // Dm9 (D2 bass, F3, A3, C4, E4)
-  { bass: 65.41, pad: [164.81, 196.0, 246.94, 293.66], chime: 392.0 }, // Cmaj9 (C2 bass, E3, G3, B3, D4)
-  { bass: 116.54, pad: [146.83, 174.61, 220.0, 293.66], chime: 349.23 }, // Bbmaj7 (Bb2 bass, D3, F3, A3, D4)
-  { bass: 110.0, pad: [130.81, 164.81, 196.0, 261.63], chime: 329.63 },  // Am7 (A2 bass, C3, E3, G3, C4)
-  { bass: 73.42, pad: [174.61, 220.0, 261.63, 349.23], chime: 440.0 },  // Dm7 (D2 bass, F3, A3, C4, F4)
-  { bass: 98.0, pad: [174.61, 220.0, 246.94, 329.63], chime: 587.33 },  // G13sus (G2 bass, F3, A3, B3, E4)
-];
-
 class SoundManager {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
   private musicGain: GainNode | null = null;
-  private musicFilter: BiquadFilterNode | null = null;
-
-  private musicTimer: number | null = null;
+  private music: HTMLAudioElement | null = null;
+  private musicPending = false;
+  private videoActive = false;
   private isMusicPlaying = false;
   private musicWanted = false;
   private isDucked = false;
-  private activeMusicOscs: OscillatorNode[] = [];
-  private currentBar = 0;
 
   private settings: UserSettings = {
     masterVolume: 80,
@@ -89,16 +69,9 @@ class SoundManager {
         this.sfxGain = this.ctx.createGain();
         this.sfxGain.connect(this.masterGain);
 
-        // 3. Music Bus with Warm Wine-Lounge Low-Pass Filter
+        // Route the looping media through Web Audio for tablet volume controls.
         this.musicGain = this.ctx.createGain();
-        this.musicFilter = this.ctx.createBiquadFilter();
-        this.musicFilter.type = 'lowpass';
-        // 2200Hz cutoff keeps warmth while ensuring luminous pads, chimes, and bass presence
-        this.musicFilter.frequency.setValueAtTime(2200, this.ctx.currentTime);
-        this.musicFilter.Q.setValueAtTime(0.7, this.ctx.currentTime);
-
-        this.musicGain.connect(this.musicFilter);
-        this.musicFilter.connect(this.masterGain);
+        this.musicGain.connect(this.masterGain);
 
         this.applyVolumes();
       } catch (err) {
@@ -124,8 +97,7 @@ class SoundManager {
 
     const master = this.settings.muted ? 0 : Math.max(0, Math.min(1, this.settings.masterVolume / 100));
     const sfx = Math.max(0, Math.min(1, this.settings.sfxVolume / 100));
-    // Music calibrated to rich, elegant ambient wine lounge presence
-    const musicScale = this.isDucked ? 0.28 : 0.88;
+    const musicScale = this.isDucked ? 0.28 : 1;
     const music = Math.max(0, Math.min(1, this.settings.musicVolume / 100)) * musicScale;
 
     if (this.masterGain) {
@@ -381,118 +353,46 @@ class SoundManager {
   }
 
   // ==============================================================================
-  // AMBIENT WINE LOUNGE BACKGROUND MUSIC
+  // LOOPING EVENT BACKGROUND MUSIC
   // ==============================================================================
 
-  /**
-   * Starts warm, audible, continuous ambient Wine Lounge background music
-   */
   public startMusic() {
     this.musicWanted = true;
-    if (this.isMusicPlaying || this.settings.muted) return;
-
+    if (this.isMusicPlaying || this.musicPending || this.settings.muted || this.videoActive) return;
     const ctx = this.ensureContext();
     if (!ctx || !this.musicGain) return;
-
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(() => {
-        if (this.musicWanted && !this.isMusicPlaying) {
-          this.startMusic();
-        }
-      }).catch(() => {});
-      return;
-    }
-
     try {
-      this.isMusicPlaying = true;
-      this.isDucked = false;
+      if (!this.music) {
+        this.music = new Audio('/Gvi%20Avp%202026%20(Final)%202.mp3');
+        this.music.loop = true;
+        this.music.preload = 'none';
+        ctx.createMediaElementSource(this.music).connect(this.musicGain);
+        this.music.addEventListener('error', () => {
+          this.isMusicPlaying = false;
+          console.error('Background audio could not be loaded:', this.music?.error);
+          window.dispatchEvent(new Event('ppm-audio-error'));
+        });
+      }
       this.applyVolumes();
-
-      const barDuration = 3.2; // ~75 BPM chilled lounge bar tempo
-
-      const playBar = () => {
-        if (!this.isMusicPlaying || !this.ctx || !this.musicGain) return;
-        if (this.ctx.state !== 'running') return;
-
-        try {
-          const t = this.ctx.currentTime;
-          const chord = WINE_LOUNGE_CHORDS[this.currentBar % WINE_LOUNGE_CHORDS.length];
-          this.currentBar++;
-
-          // 1. Warm Acoustic Cellar Bass (root note on beat 1)
-          const bassOsc = this.ctx.createOscillator();
-          const bassGain = this.ctx.createGain();
-
-          bassOsc.type = 'triangle';
-          bassOsc.frequency.setValueAtTime(chord.bass, t);
-
-          bassGain.gain.setValueAtTime(0.0001, t);
-          bassGain.gain.linearRampToValueAtTime(0.42, t + 0.12);
-          bassGain.gain.exponentialRampToValueAtTime(0.001, t + 3.1);
-
-          bassOsc.connect(bassGain);
-          bassGain.connect(this.musicGain);
-
-          bassOsc.start(t);
-          bassOsc.stop(t + 3.15);
-          this.activeMusicOscs.push(bassOsc);
-
-          // 2. Velvet Wine Pad Chords (4 voices with smooth 3.4s overlapping envelope)
-          chord.pad.forEach((freq, idx) => {
-            if (!this.ctx || !this.musicGain) return;
-            const osc = this.ctx.createOscillator();
-            const noteGain = this.ctx.createGain();
-
-            osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
-            osc.frequency.setValueAtTime(freq, t);
-
-            noteGain.gain.setValueAtTime(0.0001, t);
-            noteGain.gain.linearRampToValueAtTime(0.36, t + 0.45);
-            noteGain.gain.exponentialRampToValueAtTime(0.001, t + 3.4);
-
-            osc.connect(noteGain);
-            noteGain.connect(this.musicGain);
-
-            osc.start(t);
-            osc.stop(t + 3.45);
-            this.activeMusicOscs.push(osc);
-          });
-
-          // 3. Gentle Melodic Lounge Accent Chime (on beat 2.5 of the bar)
-          const chimeTime = t + 1.2;
-          const chimeOsc = this.ctx.createOscillator();
-          const chimeGain = this.ctx.createGain();
-
-          chimeOsc.type = 'sine';
-          chimeOsc.frequency.setValueAtTime(chord.chime, chimeTime);
-
-          chimeGain.gain.setValueAtTime(0.0001, chimeTime);
-          chimeGain.gain.linearRampToValueAtTime(0.32, chimeTime + 0.01);
-          chimeGain.gain.exponentialRampToValueAtTime(0.001, chimeTime + 1.8);
-
-          chimeOsc.connect(chimeGain);
-          chimeGain.connect(this.musicGain);
-
-          chimeOsc.start(chimeTime);
-          chimeOsc.stop(chimeTime + 1.85);
-          this.activeMusicOscs.push(chimeOsc);
-
-          // Cleanup stopped oscillators array periodically
-          if (this.activeMusicOscs.length > 30) {
-            this.activeMusicOscs = this.activeMusicOscs.slice(-15);
-          }
-        } catch {
-          // Keep loop resilient
+      this.musicPending = true;
+      void this.music.play().then(() => {
+        this.isMusicPlaying = !this.music!.paused;
+      }).catch((error: unknown) => {
+        console.warn('Background audio playback failed:', error);
+        if (!(error instanceof DOMException) || !['NotAllowedError', 'AbortError'].includes(error.name)) {
+          window.dispatchEvent(new Event('ppm-audio-error'));
         }
-      };
-
-      // Play first bar immediately
-      playBar();
-      // Overlap slightly by 60ms to guarantee zero silence gaps across interval ticks
-      this.musicTimer = window.setInterval(playBar, (barDuration * 1000) - 60);
-    } catch {
-      this.isMusicPlaying = false;
+      }).finally(() => { this.musicPending = false; });
+    } catch (error) {
+      console.error('Background audio initialization failed:', error);
+      window.dispatchEvent(new Event('ppm-audio-error'));
     }
+  }
+
+  public setVideoActive(active: boolean) {
+    this.videoActive = active;
+    if (active) this.pauseMusic();
+    else if (this.musicWanted) this.resumeMusic();
   }
 
   public duckMusic() {
@@ -507,10 +407,7 @@ class SoundManager {
 
   public pauseMusic() {
     this.isMusicPlaying = false;
-    if (this.musicTimer) {
-      window.clearInterval(this.musicTimer);
-      this.musicTimer = null;
-    }
+    this.music?.pause();
   }
 
   public resumeMusic() {
@@ -521,22 +418,8 @@ class SoundManager {
 
   public stopMusic() {
     this.musicWanted = false;
-    this.isMusicPlaying = false;
-
-    if (this.musicTimer) {
-      window.clearInterval(this.musicTimer);
-      this.musicTimer = null;
-    }
-
-    this.activeMusicOscs.forEach((osc) => {
-      try {
-        osc.stop();
-        osc.disconnect();
-      } catch {
-        // Safe
-      }
-    });
-    this.activeMusicOscs = [];
+    this.pauseMusic();
+    if (this.music) this.music.currentTime = 0;
   }
 }
 

@@ -4,25 +4,28 @@ import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
 import { GameResultDialog } from './GameResultDialog';
 import { useTranslation } from '../services/i18n';
+import { displayedSeconds, timerWon } from '../services/eventRules';
+import type { TimerResult, TimerRules } from '../services/eventRules';
 
-interface TargetTimerGameProps {
-  target: number;
+interface TargetTimerGameProps extends TimerRules {
   playerName: string;
-  onResult: (score: number) => void;
+  onResult: (result: TimerResult) => void;
   onNewPlayer?: () => void;
   onExit?: () => void;
 }
 
 type Phase = 'ready' | 'running' | 'finished';
 
-export function TargetTimerGame({ target, playerName, onResult, onNewPlayer, onExit }: TargetTimerGameProps) {
+export function TargetTimerGame({ target, winMin, winMax, playerName, onResult, onNewPlayer, onExit }: TargetTimerGameProps) {
   const t = useTranslation();
   const [phase, setPhase] = useState<Phase>('ready');
-  const [result, setResult] = useState<{ elapsed: number; difference: number; score: number } | null>(null);
+  const [result, setResult] = useState<TimerResult | null>(null);
   const [displayTime, setDisplayTime] = useState(0);
   const startedAt = useRef(0);
   const phaseRef = useRef<Phase>('ready');
   const actionRef = useRef<() => void>(() => {});
+  const roundRules = useRef<TimerRules>({ target, winMin, winMax });
+  const activeTarget = phase === 'ready' ? target : roundRules.current.target;
 
   const action = () => {
     if (phaseRef.current === 'finished') {
@@ -33,6 +36,7 @@ export function TargetTimerGame({ target, playerName, onResult, onNewPlayer, onE
       return;
     }
     if (phaseRef.current === 'ready') {
+      roundRules.current = { target, winMin, winMax };
       startedAt.current = performance.now();
       setDisplayTime(0);
       phaseRef.current = 'running';
@@ -41,15 +45,14 @@ export function TargetTimerGame({ target, playerName, onResult, onNewPlayer, onE
       haptics.tick();
       return;
     }
-    const elapsed = (performance.now() - startedAt.current) / 1000;
-    const difference = Math.abs(elapsed - target);
-    const score = Math.max(0, 1000 - Math.round(difference * 100));
+    const elapsed = displayedSeconds((performance.now() - startedAt.current) / 1000);
+    const stopped = { ...roundRules.current, elapsed };
     phaseRef.current = 'finished';
     setPhase('finished');
     setDisplayTime(elapsed);
-    setResult({ elapsed, difference, score });
-    onResult(score);
-    if (difference <= 0.1) {
+    setResult(stopped);
+    onResult(stopped);
+    if (timerWon(stopped)) {
       soundManager.playSuccess();
       haptics.success();
     } else {
@@ -91,28 +94,27 @@ export function TargetTimerGame({ target, playerName, onResult, onNewPlayer, onE
         <div className="timer-target-header">
           <div className="target-pill time-stop-target">
             <span className="target-pill-label">{t('Event target')}</span>
-            <strong className="target-pill-value">{target.toFixed(2)}s</strong>
-            <span className="target-pill-tol">{t('Win window: ±0.10s')}</span>
+            <strong className="target-pill-value">{activeTarget.toFixed(2)}s</strong>
           </div>
         </div>
         <div className="timer-visual-row time-stop-center">
           <div className="wine-glass-gauge time-stop-glass" aria-hidden="true">
             <div className="glass-bowl">
-              <div className="glass-target-line"><span>{target.toFixed(2)}s</span></div>
-              <div className="glass-wine-fill" style={{ transform: `scaleY(${Math.min(1, displayTime / target * 0.8)})` }} />
+              <div className="glass-target-line"><span>{activeTarget.toFixed(2)}s</span></div>
+              <div className="glass-wine-fill" style={{ transform: `scaleY(${Math.min(1, displayTime / activeTarget * 0.8)})` }} />
             </div>
             <div className="glass-stem" />
             <div className="glass-base" />
           </div>
           <div className="stopwatch-readout-box time-stop-content">
-            <span className="stopwatch-status time-stop-status" aria-live="polite">{t(phase === 'ready' ? 'Ready to start' : phase === 'running' ? 'Time is running' : result && result.difference <= 0.1 ? 'Target hit' : 'Round complete')}</span>
+            <span className="stopwatch-status time-stop-status" aria-live="polite">{t(phase === 'ready' ? 'Ready to start' : phase === 'running' ? 'Time is running' : result && timerWon(result) ? 'Target hit' : 'Round complete')}</span>
             <strong className="stopwatch-digits time-stop-result">{displayTime.toFixed(2)}<small>s</small></strong>
-            <p className="time-stop-detail">{result ? `${result.difference.toFixed(2)}s ${t('from target')} · ${result.score} ${t('points')}` : '\u00a0'}</p>
+            <p className="time-stop-detail">{result ? `${Math.abs(result.elapsed - result.target).toFixed(2)}s ${t('from target')}` : '\u00a0'}</p>
             <button type="button" className={`btn timer-action-btn time-stop-action ${phase === 'running' ? 'is-stop' : ''}`} onClick={action}>{phase === 'ready' ? <Play aria-hidden="true" /> : phase === 'running' ? <Square aria-hidden="true" /> : <RotateCcw aria-hidden="true" />}{t(phase === 'ready' ? 'Start' : phase === 'running' ? 'Stop' : 'Try again')}</button>
           </div>
         </div>
       </div>
-      <GameResultDialog isOpen={phase === 'finished'} won={Boolean(result && result.difference <= 0.1)} score={result?.score ?? 0} onAction={action} onNewPlayer={onNewPlayer} onExit={onExit} />
+      <GameResultDialog isOpen={phase === 'finished'} won={Boolean(result && timerWon(result))} result={`${(result?.elapsed ?? 0).toFixed(2)}s`} resultLabel="Your time" onAction={action} onNewPlayer={onNewPlayer} onExit={onExit} />
     </div>
   );
 }

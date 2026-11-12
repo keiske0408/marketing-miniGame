@@ -13,6 +13,7 @@ interface ModalProps {
   actions?: ReactNode;
   maxWidth?: string;
   className?: string;
+  dismissible?: boolean;
 }
 
 export function Modal({
@@ -23,6 +24,7 @@ export function Modal({
   actions,
   maxWidth = '440px',
   className = '',
+  dismissible = true,
 }: ModalProps) {
   const t = useTranslation();
   const titleId = useId();
@@ -42,8 +44,10 @@ export function Modal({
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
-        soundManager.playClick();
-        closeRef.current();
+        if (dismissible) {
+          soundManager.playClick();
+          closeRef.current();
+        }
       }
       if (event.key === 'Tab') {
         const controls = dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]');
@@ -65,7 +69,7 @@ export function Modal({
       document.body.style.overflow = previousOverflow;
       if (previousFocus?.isConnected) previousFocus.focus();
     };
-  }, [isOpen]);
+  }, [isOpen, dismissible]);
 
   if (!isOpen) return null;
 
@@ -77,7 +81,7 @@ export function Modal({
       aria-labelledby={titleId}
       ref={dialogRef}
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
+        if (dismissible && e.target === e.currentTarget) {
           soundManager.playClick();
           onClose();
         }
@@ -86,7 +90,7 @@ export function Modal({
       <div className={`card modal-card ${className}`} style={{ maxWidth }}>
         <div className="modal-header">
           <h2 id={titleId}>{title}</h2>
-          <button
+          {dismissible && <button
             type="button"
             className="modal-close-btn"
             onClick={() => {
@@ -96,7 +100,7 @@ export function Modal({
             aria-label={t('Close dialog')}
           >
             <X aria-hidden="true" />
-          </button>
+          </button>}
         </div>
         <div className="modal-body">{children}</div>
         {actions && <div className="modal-actions">{actions}</div>}
@@ -105,4 +109,3 @@ export function Modal({
     document.body,
   );
 }
-

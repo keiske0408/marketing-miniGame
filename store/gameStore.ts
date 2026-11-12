@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from '../config/constants';
 import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
 import { supabaseService } from '../services/supabase';
+import { normalizeSettings } from '../services/eventRules';
 
 interface GameRunState {
   isActive: boolean;
@@ -219,7 +220,7 @@ export const useGameStore = create<GameStoreState>()(
       settings: DEFAULT_SETTINGS,
 
       updateSettings: (partial) => {
-        const merged = { ...get().settings, ...partial };
+        const merged = normalizeSettings({ ...get().settings, ...partial });
         set({ settings: merged });
         soundManager.updateSettings(merged);
         haptics.setEnabled(merged.haptics);
@@ -365,6 +366,10 @@ export const useGameStore = create<GameStoreState>()(
     {
       name: 'ppm_wine_event_storage',
       storage: createJSONStorage(() => localStorage),
+      merge: (persisted, current) => {
+        const saved = persisted as Partial<GameStoreState> | undefined;
+        return { ...current, ...saved, settings: normalizeSettings(saved?.settings ?? {}) };
+      },
       onRehydrateStorage: () => (state) => {
         if (state?.settings) {
           soundManager.updateSettings(state.settings);

@@ -71,3 +71,5 @@ Thumbs.db
 .agents/
 skills-lock.json
 
+# Preserve the local source export; deploy the optimized MP4 instead.
+public/Gvi Avp 2026 (Final) 2.mov

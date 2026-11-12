@@ -11,7 +11,7 @@ export function SelectedGameScreen() {
   const player = useGameStore((state) => state.kioskPlayer);
   return (
     <Screen className="kiosk-selection kiosk-selected" maxWidth="1000px">
-      <nav className="kiosk-selection-nav" aria-label="Game navigation">
+      <nav className="kiosk-selection-nav" aria-label={t('Game navigation')}>
         <button type="button" className="kiosk-nav-button" onClick={() => navigate('/home')}><ArrowLeft aria-hidden="true" /><Gamepad2 aria-hidden="true" />{t('All games')}</button>
         <span className="kiosk-lounge-label">{t('THE GAME LOUNGE')}</span>
       </nav>

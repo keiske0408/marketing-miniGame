@@ -14,9 +14,19 @@ import { RequireAuth } from './components/RequireAuth';
 import { Toast } from './components/Toast';
 import { useGameStore } from './store/gameStore';
 import { soundManager } from './services/audio';
+import { translate } from './services/i18n';
 
 export default function App() {
   const settings = useGameStore((state) => state.settings);
+
+  useEffect(() => {
+    const handleAudioError = () => {
+      const state = useGameStore.getState();
+      state.showToast(translate('Background audio could not be played. Check the MP3 file.', state.settings.language), 'error');
+    };
+    window.addEventListener('ppm-audio-error', handleAudioError);
+    return () => window.removeEventListener('ppm-audio-error', handleAudioError);
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = settings.language === 'tl' ? 'tl' : 'en';

@@ -1,21 +1,10 @@
-# Audio Assets Guide - Perfect Picture Match
+# Audio assets
 
-The application includes a built-in zero-latency **Web Audio API sound synthesizer** that procedurally produces arcade sound effects and ambient chords out-of-the-box with zero network delay or missing asset errors.
+The background track is [`../Gvi Avp 2026 (Final) 2.mp3`](<../Gvi Avp 2026 (Final) 2.mp3>).
+It loops after the first user interaction. Master volume, Music volume, mute, and result ducking are applied through Web Audio. Background music pauses while AVP plays and resumes on pause, end, or leaving the video screen.
 
-If you wish to override the procedural synth with custom audio files, you can place standard `.mp3` or `.wav` files in this `/public/audio` directory:
+To replace the track, replace that MP3 while retaining its filename, or update the URL in [`services/audio.ts`](../../services/audio.ts). Confirm you have permission to distribute the audio.
 
-| Filename | Purpose | Recommended Duration |
-| :--- | :--- | :--- |
-| `click.wav` | Button click & slider tick | ~40ms short crisp pop |
-| `success.wav` | Puzzle piece matched into gap | ~200ms cheerful chime |
-| `fail.wav` | Piece missed gap | ~250ms low thud / buzz |
-| `countdown.wav` | 3-2-1 beat pip | ~100ms 880Hz pip |
-| `go.wav` | Countdown "GO!" chime | ~300ms 1500Hz ping |
-| `levelup.wav` | Level cleared celebration | ~600ms triumphant fanfare |
-| `music.mp3` | Background ambient loop | Loopable arcade pulse (120 BPM, gentle) |
+Click, success, failure, countdown, and level-up effects remain procedural Web Audio sounds. SFX volume controls them independently. Files added to this directory do not automatically override these effects; custom effects require wiring their playback in the audio service.
 
-### Royalty-Free Sources
-- [Freesound.org](https://freesound.org) (Creative Commons 0)
-- [Kenney Game Assets](https://kenney.nl/assets) (Audio / UI Audio)
-- [OpenGameArt.org](https://opengameart.org)
-
+AVP video lives at [`../gvi-avp-2026.mp4`](../gvi-avp-2026.mp4). See the main [README](../../README.md#avp-video-and-background-music) for bundled video, optional online hosting, and SharePoint export instructions.
