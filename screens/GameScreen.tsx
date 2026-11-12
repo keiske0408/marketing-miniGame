@@ -4,6 +4,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { VintageWineMatch } from '../components/VintageWineMatch';
 import { TargetTimerGame } from '../components/TargetTimerGame';
 import { useGameStore } from '../store/gameStore';
+import { useTranslation } from '../services/i18n';
 import type { GameMode } from '../types';
 
 interface LocalScore {
@@ -27,6 +28,7 @@ function readScores(): LocalScore[] {
 }
 
 export function GameScreen() {
+  const t = useTranslation();
   const navigate = useNavigate();
   const player = useGameStore((state) => state.kioskPlayer);
   const setKioskPlayer = useGameStore((state) => state.setKioskPlayer);
@@ -58,22 +60,22 @@ export function GameScreen() {
   return (
     <main className="kiosk-play">
       <header className="kiosk-play-header">
-        <button type="button" className="kiosk-nav-button" onClick={() => navigate('/game')}><ArrowLeft aria-hidden="true" /><Gamepad2 aria-hidden="true" />Game menu</button>
-        {mode !== 'target-timer' && <div className="kiosk-player-name"><span>PLAYER</span><strong>{player.name}</strong></div>}
-        <button type="button" className="kiosk-new-player" onClick={newPlayer}><UserRoundPlus aria-hidden="true" /><span><strong>Next player</strong><small>Register &amp; play</small></span></button>
+        <button type="button" className="kiosk-nav-button" onClick={() => navigate('/game')}><ArrowLeft aria-hidden="true" /><Gamepad2 aria-hidden="true" />{t('Game menu')}</button>
+        {mode !== 'target-timer' && <div className="kiosk-player-name"><span>{t('Player')}</span><strong>{player.name}</strong></div>}
+        <button type="button" className="kiosk-new-player" onClick={newPlayer}><UserRoundPlus aria-hidden="true" /><span><strong>{t('Next player')}</strong><small>{t('Register & play')}</small></span></button>
       </header>
-      <div className="kiosk-play-title"><div><span>CHÂTEAU VINTAGE / GAME LOUNGE</span><h1>{mode === 'target-timer' ? 'Time Stop' : 'Vintage Picture Match'}</h1></div><div className="kiosk-current-score"><span>LAST SCORE</span><strong>{currentScore ?? '—'}</strong></div></div>
+      <div className="kiosk-play-title"><div><span>CHÂTEAU VINTAGE / GAME LOUNGE</span><h1>{mode === 'target-timer' ? 'Time Stop' : 'Vintage Picture Match'}</h1></div><div className="kiosk-current-score"><span>{t('Last score')}</span><strong>{currentScore ?? '—'}</strong></div></div>
       <div className="kiosk-play-grid">
         <div className="kiosk-play-stage">
-          {mode === 'target-timer' ? <TargetTimerGame target={target} playerName={player.name} onResult={saveScore} /> :
+          {mode === 'target-timer' ? <TargetTimerGame target={target} playerName={player.name} onResult={saveScore} onNewPlayer={newPlayer} onExit={() => navigate('/game')} /> :
             <VintageWineMatch onScoreUpdate={setCurrentScore} onGameOver={saveScore} onExit={() => navigate('/game')} onNewPlayer={newPlayer} />}
         </div>
-        <aside className="kiosk-leaderboard" aria-label="Leaderboard">
-          <div className="kiosk-leaderboard-heading"><Trophy aria-hidden="true" /><div><span>THIS DEVICE</span><h2>Leaderboard</h2></div><span>TOP 8</span></div>
-          {standings.length === 0 ? <p className="kiosk-empty">The top spot is waiting for you.</p> : <ol>{standings.map((entry, index) => <li key={entry.id}><span className="kiosk-rank">{String(index + 1).padStart(2, '0')}</span><strong>{entry.name}</strong><span>{entry.score}</span></li>)}</ol>}
+        <aside className="kiosk-leaderboard" aria-label={t('Leaderboard')}>
+          <div className="kiosk-leaderboard-heading"><Trophy aria-hidden="true" /><div><span>{t('This device')}</span><h2>{t('Leaderboard')}</h2></div><span>{t('Top 8')}</span></div>
+          {standings.length === 0 ? <p className="kiosk-empty">{t('The top spot is waiting for you.')}</p> : <ol>{standings.map((entry, index) => <li key={entry.id}><span className="kiosk-rank">{String(index + 1).padStart(2, '0')}</span><strong>{entry.name}</strong><span>{entry.score}</span></li>)}</ol>}
         </aside>
       </div>
-      <footer className="kiosk-play-footer"><span>{mode === 'target-timer' ? 'One attempt per round' : 'Vintage Picture Match'}</span></footer>
+      <footer className="kiosk-play-footer"><span>{mode === 'target-timer' ? t('One attempt per round') : 'Vintage Picture Match'}</span></footer>
     </main>
   );
 }

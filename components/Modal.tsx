@@ -1,6 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { X } from 'lucide-react';
 import { soundManager } from '../services/audio';
+import { useTranslation } from '../services/i18n';
 
 interface ModalProps {
   title: string;
@@ -9,6 +12,7 @@ interface ModalProps {
   children: ReactNode;
   actions?: ReactNode;
   maxWidth?: string;
+  className?: string;
 }
 
 export function Modal({
@@ -18,27 +22,60 @@ export function Modal({
   children,
   actions,
   maxWidth = '440px',
+  className = '',
 }: ModalProps) {
+  const t = useTranslation();
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
   useEffect(() => {
     if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const firstControl = dialogRef.current?.querySelector<HTMLElement>('[data-dialog-autofocus]')
+      ?? dialogRef.current?.querySelector<HTMLElement>('button');
+    firstControl?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
         soundManager.playClick();
-        onClose();
+        closeRef.current();
+      }
+      if (event.key === 'Tab') {
+        const controls = dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]');
+        if (!controls?.length) return;
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       className="overlay modal-overlay"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="modal-title"
+      aria-labelledby={titleId}
+      ref={dialogRef}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           soundManager.playClick();
@@ -46,9 +83,9 @@ export function Modal({
         }
       }}
     >
-      <div className="card modal-card" style={{ maxWidth }}>
+      <div className={`card modal-card ${className}`} style={{ maxWidth }}>
         <div className="modal-header">
-          <h2 id="modal-title">{title}</h2>
+          <h2 id={titleId}>{title}</h2>
           <button
             type="button"
             className="modal-close-btn"
@@ -56,15 +93,16 @@ export function Modal({
               soundManager.playClick();
               onClose();
             }}
-            aria-label="Close dialog"
+            aria-label={t('Close dialog')}
           >
-            ✕
+            <X aria-hidden="true" />
           </button>
         </div>
         <div className="modal-body">{children}</div>
         {actions && <div className="modal-actions">{actions}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -14,6 +14,8 @@ The game menu and play screen are optimized for 1032 x 1376 portrait tablets. Po
 
 For UI regression checks, verify both game menus, registration, timer start/stop/retry, player handoff, AVP, and admin navigation at 1032 x 1376, 1376 x 1032, and mobile widths. Run `npm run build` before pushing; Vercel uses the existing SPA rewrites and `dist` output.
 
+Both games show the score in a result dialog: congratulations on a win, or thanks for playing on a loss. Picture Match pauses after a match until Continue is selected. Registration keeps the full Privacy Notice behind View more details and requires a separate consent checkbox. Settings includes a persistent English/Tagalog language selector for the kiosk flow.
+
 An interactive, mobile-first timing and reflex mini-game optimized for in-person marketing events, product showcases, and kiosk displays. Attendees scan a QR code, play a fast-paced puzzle challenge, compete on a live event leaderboard, and claim booth prizes.
 
 Deploys seamlessly to **Vercel** with full client-side SPA routing and serverless score validation.

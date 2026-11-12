@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
+import { useTranslation } from '../services/i18n';
 
 interface BackButtonProps {
   to?: string;
@@ -8,7 +9,9 @@ interface BackButtonProps {
   className?: string;
 }
 
-export function BackButton({ to, label = 'Back', className = '' }: BackButtonProps) {
+export function BackButton({ to, label, className = '' }: BackButtonProps) {
+  const t = useTranslation();
+  const buttonLabel = label ?? t('Back');
   const navigate = useNavigate();
 
   const handleClick = () => {
@@ -26,10 +29,10 @@ export function BackButton({ to, label = 'Back', className = '' }: BackButtonPro
       type="button"
       className={`back-btn ${className}`}
       onClick={handleClick}
-      aria-label={label}
+      aria-label={buttonLabel}
     >
       <span className="back-arrow" aria-hidden="true">‹</span>
-      <span className="back-text">{label}</span>
+      <span className="back-text">{buttonLabel}</span>
     </button>
   );
 }

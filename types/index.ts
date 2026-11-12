@@ -1,6 +1,6 @@
 export type ThemeMode = 'auto' | 'light' | 'dark';
 export type Difficulty = 'chill' | 'normal' | 'hard';
-export type Language = 'en' | 'es' | 'fr' | 'de';
+export type Language = 'en' | 'tl' | 'es' | 'fr' | 'de';
 export type GameMode = 'picture-match' | 'target-timer';
 export type TimerTargetMode = 'dynamic' | 'fixed';
 

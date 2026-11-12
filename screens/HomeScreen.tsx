@@ -2,9 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Sliders, Wine, Clock } from 'lucide-react';
 import { Screen } from '../components/Screen';
 import { useGameStore } from '../store/gameStore';
+import { useTranslation } from '../services/i18n';
 import type { GameMode } from '../types';
 
 export function HomeScreen() {
+  const t = useTranslation();
   const navigate = useNavigate();
   const setGameMode = useGameStore((state) => state.setGameMode);
   const selectGame = (mode: GameMode) => {
@@ -20,11 +22,7 @@ export function HomeScreen() {
       </div>
 
       <div className="vintage-landing-header">
-        <span className="landing-badge">SELECT YOUR TASTING CHALLENGE</span>
-        <h1 className="landing-title">The Tasting Lounge</h1>
-        <p className="landing-subtitle">
-          Test your split-second sommelier precision, climb the live event standings, and claim reserve tasting rewards.
-        </p>
+        <h1 className="landing-title">{t('Choose a game')}</h1>
       </div>
 
       {/* Ornate 2-Game Selection Grid */}
@@ -36,10 +34,10 @@ export function HomeScreen() {
           onClick={() => selectGame('target-timer')}
         >
           <div className="card-top-tag">
-            <span className="game-num">CHALLENGE 01</span>
+            <span className="game-num">{t('CHALLENGE')} 01</span>
             <span className="game-type-badge">
               <Clock className="w-3.5 h-3.5" aria-hidden="true" />
-              PRECISION TIMER
+              {t('Precision timer')}
             </span>
           </div>
 
@@ -58,9 +56,9 @@ export function HomeScreen() {
               <ArrowRight className="card-arrow" aria-hidden="true" />
             </div>
             <p className="card-description">
-              Stop the pour clock at the exact designated target second with sommelier accuracy.
+              {t('Stop at the target time.')}
             </p>
-            <span className="card-action-pill">SELECT GAME ↗</span>
+            <span className="card-action-pill">{t('Select game')} ↗</span>
           </div>
         </button>
 
@@ -71,10 +69,10 @@ export function HomeScreen() {
           onClick={() => selectGame('picture-match')}
         >
           <div className="card-top-tag">
-            <span className="game-num">CHALLENGE 02</span>
+            <span className="game-num">{t('CHALLENGE')} 02</span>
             <span className="game-type-badge">
               <Wine className="w-3.5 h-3.5" aria-hidden="true" />
-              WINE ALIGNMENT
+              {t('Picture match')}
             </span>
           </div>
 
@@ -93,9 +91,9 @@ export function HomeScreen() {
               <ArrowRight className="card-arrow" aria-hidden="true" />
             </div>
             <p className="card-description">
-              Stop the moving Bordeaux wine glass right into the golden silhouette. Accelerates every 2 matches!
+              {t('Match the glass to its outline.')}
             </p>
-            <span className="card-action-pill">SELECT GAME ↗</span>
+            <span className="card-action-pill">{t('Select game')} ↗</span>
           </div>
         </button>
       </div>
@@ -112,8 +110,7 @@ export function HomeScreen() {
               <Sliders className="w-5 h-5 text-gold" />
             </span>
             <div className="medallion-text">
-              <strong className="medallion-title">CELLAR CONTROLS &amp; ADMIN SETTINGS</strong>
-              <small className="medallion-desc">Calibrate pour targets, audio volumes &amp; device parameters</small>
+              <strong className="medallion-title">{t('Admin settings')}</strong>
             </div>
             <span className="medallion-flourish" aria-hidden="true">⚜️</span>
           </div>

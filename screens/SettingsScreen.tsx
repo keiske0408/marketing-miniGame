@@ -6,9 +6,11 @@ import { Toggle } from '../components/Toggle';
 import { MenuButton } from '../components/MenuButton';
 import { Modal } from '../components/Modal';
 import { useGameStore } from '../store/gameStore';
-import type { Difficulty, ThemeMode } from '../types';
+import { useTranslation } from '../services/i18n';
+import type { Difficulty, Language, ThemeMode } from '../types';
 
 export function SettingsScreen() {
+  const t = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = (location.state as { from?: string } | null)?.from === '/game' ? '/game' : '/home';
@@ -38,37 +40,44 @@ export function SettingsScreen() {
 
   return (
     <Screen
-      title="Admin Settings"
-      subtitle="Château Event & Booth Controls"
+      title={t('Admin Settings')}
       showBack={true}
       backTo={returnTo}
       className="settings-screen"
     >
+      <section className="settings-section">
+        <div className="settings-card setting-row">
+          <label htmlFor="lang-select" className="setting-row-label">{t('Language')}</label>
+          <select id="lang-select" className="select-input" value={settings.language === 'tl' ? 'tl' : 'en'} onChange={(event) => updateSettings({ language: event.target.value as Language })}>
+            <option value="en">English</option>
+            <option value="tl">Tagalog</option>
+          </select>
+        </div>
+      </section>
       {/* Audio Section */}
       <section className="settings-section">
-        <h2 className="section-title">🔊 Audio Controls</h2>
+        <h2 className="section-title">{t('Audio')}</h2>
         <div className="settings-card">
           <Slider
-            label="Master Volume"
+            label={t('Master Volume')}
             value={settings.masterVolume}
             disabled={settings.muted}
             onChange={(val) => updateSettings({ masterVolume: val })}
           />
           <Slider
-            label="Music Volume"
+            label={t('Music Volume')}
             value={settings.musicVolume}
             disabled={settings.muted}
             onChange={(val) => updateSettings({ musicVolume: val })}
           />
           <Slider
-            label="SFX Volume"
+            label={t('SFX Volume')}
             value={settings.sfxVolume}
             disabled={settings.muted}
             onChange={(val) => updateSettings({ sfxVolume: val })}
           />
           <Toggle
-            label="Mute All Audio"
-            description="Silences background chords and puzzle sound effects"
+            label={t('Mute audio')}
             checked={settings.muted}
             onChange={(val) => updateSettings({ muted: val })}
           />
@@ -77,25 +86,23 @@ export function SettingsScreen() {
 
       {/* Accessibility & Game Feel */}
       <section className="settings-section">
-        <h2 className="section-title">🎮 Gameplay & Accessibility</h2>
+        <h2 className="section-title">{t('Gameplay')}</h2>
         <div className="settings-card">
           <Toggle
-            label="Haptic Vibrations"
-            description="Phone vibrations on button clicks, locks, and countdown"
+            label={t('Vibration')}
             checked={settings.haptics}
             onChange={(val) => updateSettings({ haptics: val })}
           />
 
           <Toggle
-            label="Reduce Animations / Motion"
-            description="Replaces camera slides & confetti bursts with gentle fades"
+            label={t('Reduce motion')}
             checked={settings.reducedMotion}
             onChange={(val) => updateSettings({ reducedMotion: val })}
           />
 
           <div className="setting-row">
             <label htmlFor="theme-select" className="setting-row-label">
-              Visual Theme
+              {t('Theme')}
             </label>
             <select
               id="theme-select"
@@ -103,15 +110,15 @@ export function SettingsScreen() {
               onChange={(e) => updateSettings({ theme: e.target.value as ThemeMode })}
               className="select-input"
             >
-              <option value="auto">System Default (Auto)</option>
-              <option value="light">Light Arcade</option>
-              <option value="dark">Dark Neon</option>
+              <option value="auto">{t('System')}</option>
+              <option value="light">{t('Light')}</option>
+              <option value="dark">{t('Dark')}</option>
             </select>
           </div>
 
           <div className="setting-row">
             <label htmlFor="diff-select" className="setting-row-label">
-              Difficulty Preset
+              {t('Difficulty')}
             </label>
             <select
               id="diff-select"
@@ -119,37 +126,21 @@ export function SettingsScreen() {
               onChange={(e) => updateSettings({ difficulty: e.target.value as Difficulty })}
               className="select-input"
             >
-              <option value="chill">Chill (Slower speed, generous gap, +8s time)</option>
-              <option value="normal">Normal (Standard arcade tuning)</option>
-              <option value="hard">Hard (Faster slide, tight tolerance, -5s time)</option>
+              <option value="chill">{t('Easy')}</option>
+              <option value="normal">{t('Normal')}</option>
+              <option value="hard">{t('Hard')}</option>
             </select>
           </div>
 
-          {/* <div className="setting-row">
-            <label htmlFor="lang-select" className="setting-row-label">
-              Language
-            </label>
-            <select
-              id="lang-select"
-              value={settings.language}
-              onChange={(e) => updateSettings({ language: e.target.value as Language })}
-              className="select-input"
-            >
-              <option value="en">English (US)</option>
-              <option value="es">Español (Ready)</option>
-              <option value="fr">Français (Ready)</option>
-              <option value="de">Deutsch (Ready)</option>
-            </select>
-          </div> */}
         </div>
       </section>
 
       {/* Event Host & Booth Controls */}
       <section className="settings-section">
-        <h2 className="section-title">🍷 Event Host &amp; Booth Controls</h2>
+        <h2 className="section-title">{t('Event controls')}</h2>
         <div className="settings-card">
           <div className="setting-row">
-            <label htmlFor="timer-target" className="setting-row-label">Time Stop target (seconds)</label>
+            <label htmlFor="timer-target" className="setting-row-label">{t('Time Stop target (seconds)')}</label>
             <input id="timer-target" type="number" min="1" max="300" step="0.1"
               defaultValue={settings.timerTargetMode === 'fixed' ? settings.timerCustomTarget ?? 24 : 24}
               onBlur={(event) => {
@@ -161,11 +152,11 @@ export function SettingsScreen() {
                 }
               }} className="form-input" />
           </div>
-          <Toggle label="Require player name" checked={Boolean(settings.requirePlayerName)}
+          <Toggle label={t('Require player name')} checked={Boolean(settings.requirePlayerName)}
             onChange={(value) => updateSettings({ requirePlayerName: value })} />
-          <Toggle label="Require player email" checked={Boolean(settings.requirePlayerEmail)}
+          <Toggle label={t('Require player email')} checked={Boolean(settings.requirePlayerEmail)}
             onChange={(value) => updateSettings({ requirePlayerEmail: value })} />
-          <Toggle label="Require player phone number" checked={Boolean(settings.requirePlayerPhone)}
+          <Toggle label={t('Require player phone number')} checked={Boolean(settings.requirePlayerPhone)}
             onChange={(value) => updateSettings({ requirePlayerPhone: value })} />
         </div>
       </section>
@@ -173,11 +164,11 @@ export function SettingsScreen() {
       {/* Account Section */}
       {user && (
         <section className="settings-section">
-          <h2 className="section-title">👤 Account & Profile</h2>
+          <h2 className="section-title">{t('Account')}</h2>
           <div className="settings-card">
             <form onSubmit={handleSaveName} className="name-edit-form">
               <label htmlFor="edit-name" className="setting-row-label">
-                Display Name
+                {t('Display Name')}
               </label>
               <div className="name-edit-row">
                 <input
@@ -188,7 +179,7 @@ export function SettingsScreen() {
                   className="form-input"
                 />
                 <button type="submit" className="btn small-btn">
-                  Save
+                  {t('Save')}
                 </button>
               </div>
             </form>
@@ -202,7 +193,7 @@ export function SettingsScreen() {
                   navigate('/home');
                 }}
               >
-                Log Out
+                {t('Log Out')}
               </button>
 
               <button
@@ -210,7 +201,7 @@ export function SettingsScreen() {
                 className="btn ghost text-danger-subtle"
                 onClick={() => setShowDeleteModal(true)}
               >
-                Delete My Data
+                {t('Delete My Data')}
               </button>
             </div>
           </div>
@@ -219,7 +210,7 @@ export function SettingsScreen() {
 
       {/* Legal & Credits Section */}
       <section className="settings-section">
-        <h2 className="section-title">ℹ Legal & Info</h2>
+        <h2 className="section-title">{t('Legal & Info')}</h2>
         <div className="settings-card legal-links-grid">
           <button
             type="button"
@@ -231,7 +222,7 @@ export function SettingsScreen() {
               })
             }
           >
-            Terms of Service
+            {t('Terms of Service')}
           </button>
 
           <button
@@ -244,7 +235,7 @@ export function SettingsScreen() {
               })
             }
           >
-            Privacy Policy
+            {t('Privacy Policy')}
           </button>
 
           <button
@@ -252,45 +243,45 @@ export function SettingsScreen() {
             className="text-link-btn"
             onClick={() =>
               setModalContent({
-                title: 'Credits & Attributions',
+                title: 'Game Credits',
                 body: 'Perfect Picture Match • Built with Vite, React, TypeScript, Web Audio API, and CSS tokens. Procedural SVG illustration scenes created with mathematical vectors.',
               })
             }
           >
-            Game Credits
+            {t('Game Credits')}
           </button>
         </div>
       </section>
 
       {/* Delete Data Confirmation Modal */}
       <Modal
-        title="Permanently Delete Data?"
+        title={t('Permanently Delete Data?')}
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         actions={
           <>
             <MenuButton variant="ghost" onClick={() => setShowDeleteModal(false)}>
-              Cancel
+              {t('Cancel')}
             </MenuButton>
             <MenuButton variant="danger" onClick={handleDeleteData}>
-              Yes, Delete All My Data
+              {t('Yes, Delete All My Data')}
             </MenuButton>
           </>
         }
       >
         <p className="modal-warning-text">
-          Are you sure? This will permanently erase your player profile, best scores, earned reward vouchers, and consents from both local storage and the database. This action cannot be undone.
+          {t('This permanently deletes your profile, scores, rewards, and consent records. This cannot be undone.')}
         </p>
       </Modal>
 
       {/* Info Modal */}
       {modalContent && (
         <Modal
-          title={modalContent.title}
+          title={t(modalContent.title)}
           isOpen={true}
           onClose={() => setModalContent(null)}
         >
-          <p>{modalContent.body}</p>
+          <p>{t(modalContent.body)}</p>
         </Modal>
       )}
     </Screen>

@@ -1,6 +1,8 @@
 import { Screen } from '../components/Screen';
+import { useTranslation } from '../services/i18n';
 
 export function AvpScreen() {
+  const t = useTranslation();
   const videoUrl = import.meta.env.VITE_AVP_VIDEO_URL?.trim();
 
   return (
@@ -10,7 +12,7 @@ export function AvpScreen() {
           Your browser does not support video playback.
         </video>
       ) : (
-        <div className="avp-placeholder" role="status"><span>VIDEO</span><strong>Coming soon</strong></div>
+        <div className="avp-placeholder" role="status"><span>VIDEO</span><strong>{t('Coming soon')}</strong></div>
       )}
     </Screen>
   );

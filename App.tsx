@@ -19,6 +19,7 @@ export default function App() {
   const settings = useGameStore((state) => state.settings);
 
   useEffect(() => {
+    document.documentElement.lang = settings.language === 'tl' ? 'tl' : 'en';
     // Synchronize HTML theme data-attribute
     if (settings.theme === 'auto') {
       document.documentElement.removeAttribute('data-theme');

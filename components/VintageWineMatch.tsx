@@ -4,6 +4,8 @@ import { Confetti } from './Confetti';
 import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
 import { useGameStore } from '../store/gameStore';
+import { GameResultDialog } from './GameResultDialog';
+import { useTranslation } from '../services/i18n';
 
 interface VintageWineMatchProps {
   onScoreUpdate?: (score: number) => void;
@@ -15,8 +17,8 @@ interface VintageWineMatchProps {
 type PlayPhase = 'idle' | 'moving' | 'stopping' | 'matched' | 'missed' | 'gameover';
 
 export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlayer }: VintageWineMatchProps) {
+  const t = useTranslation();
   const settings = useGameStore((state) => state.settings);
-  const [lives, setLives] = useState(1);
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -56,10 +58,8 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
   const speedRef = useRef(baseSpeed);
 
   const phaseRef = useRef<PlayPhase>('moving');
-  const livesRef = useRef(1);
   const scoreRef = useRef(0);
   const bestScoreRef = useRef(bestScore);
-  const delayTimerRef = useRef<number | null>(null);
 
   // Dynamic target silhouette position: changes to a new spot across the board after each successful match!
   const [targetX, setTargetX] = useState(66.5);
@@ -71,7 +71,6 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
     return pool[Math.floor(Math.random() * pool.length)] ?? 52.0;
   }, []);
 
-  livesRef.current = lives;
   scoreRef.current = score;
   bestScoreRef.current = bestScore;
 
@@ -108,7 +107,6 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
     if (diff <= tolerance) {
       // SUCCESS: PERFECT MATCH!
       const isExact = diff <= tolerance * 0.35;
-      const accuracy = Math.max(0, Math.min(100, Math.round((1 - diff / tolerance) * 100)));
       const points = 100 + (isExact ? 50 : 0);
       const newScore = scoreRef.current + points;
 
@@ -118,7 +116,6 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
       setMatchCount(newCount);
       const nextSpeed = calculateSpeed(newCount);
       speedRef.current = nextSpeed;
-      const speedMultiplier = (nextSpeed / baseSpeed).toFixed(1);
 
       // Snap exactly into silhouette
       posRef.current = currentTargetX;
@@ -126,6 +123,7 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
 
       setScore(newScore);
       onScoreUpdate?.(newScore);
+      onGameOver?.(newScore);
 
       if (newScore > bestScoreRef.current) {
         setBestScore(newScore);
@@ -134,49 +132,32 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
         }
       }
 
-      const speedBadge = Math.floor(newCount / 2) > 0 ? ` (⚡ ${speedMultiplier}x Speed)` : '';
-      setToast(
-        isExact
-          ? `🍾 A PERFECT MATCH! +150${speedBadge}`
-          : `🍷 MATCH LOCKED! ${accuracy}% (+100)${speedBadge}`
-      );
+      setToast(`${t(isExact ? 'Perfect match!' : 'Match!')} +${points}`);
       setConfettiBurst((b) => b + 1);
       setGamePhase('matched');
 
       soundManager.playSuccess();
       haptics.success();
 
-      // Reset for next attempt while keeping score AND shift wine silhouette to a new position!
-      if (delayTimerRef.current) {
-        window.clearTimeout(delayTimerRef.current);
-      }
-      delayTimerRef.current = window.setTimeout(() => {
-        const nextX = pickNextTarget(targetXRef.current);
-        targetXRef.current = nextX;
-        setTargetX(nextX);
-        resetGlassToStart();
-      }, 1400);
     } else {
-      // MISS: ONE LIFE EXPENDED -> GAME OVER
-      setLives(0);
-      livesRef.current = 0;
-
       soundManager.playFail();
       haptics.fail();
 
-      setToast('Tasting Life Lost!');
+      setToast(null);
       setGamePhase('gameover');
       soundManager.duckMusic();
       onGameOver?.(scoreRef.current);
     }
-  }, [baseSpeed, calculateSpeed, tolerance, onScoreUpdate, onGameOver, resetGlassToStart, pickNextTarget]);
+  }, [calculateSpeed, tolerance, onScoreUpdate, onGameOver, t]);
+
+  const handleContinue = () => {
+    const nextX = pickNextTarget(targetXRef.current);
+    targetXRef.current = nextX;
+    setTargetX(nextX);
+    resetGlassToStart();
+  };
 
   const handleRestart = useCallback(() => {
-    if (delayTimerRef.current) {
-      window.clearTimeout(delayTimerRef.current);
-    }
-    setLives(1);
-    livesRef.current = 1;
     setScore(0);
     scoreRef.current = 0;
     matchCountRef.current = 0;
@@ -189,10 +170,13 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
     resetGlassToStart();
   }, [baseSpeed, resetGlassToStart]);
 
+  const handleExit = () => {
+    onGameOver?.(scoreRef.current);
+    onExit?.();
+  };
+
   const handleStopRef = useRef(handleStop);
   handleStopRef.current = handleStop;
-  const handleRestartRef = useRef(handleRestart);
-  handleRestartRef.current = handleRestart;
 
   // 60fps RequestAnimationFrame Loop - isolated from render callback churn
   useEffect(() => {
@@ -219,14 +203,10 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
 
     // Keyboard Spacebar listener
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
+      if (e.code === 'Space' && !document.querySelector('[role="dialog"]') && !(e.target as HTMLElement).closest('button, input, select, textarea')) {
         e.preventDefault();
         if (!e.repeat) {
-          if (phaseRef.current === 'gameover') {
-            handleRestartRef.current();
-          } else {
-            handleStopRef.current();
-          }
+          handleStopRef.current();
         }
       }
     };
@@ -235,9 +215,7 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('keydown', onKey);
-      if (delayTimerRef.current) {
-        window.clearTimeout(delayTimerRef.current);
-      }
+      soundManager.unduckMusic();
     };
   }, []);
 
@@ -247,30 +225,34 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
           1. TOP LUXURY HEADER (matching Image 2)
           ============================================================================== */}
       <header className="vintage-top-header">
-        {onExit && (
+        <div className="vintage-header-left">
+          {onExit && (
+            <button
+              type="button"
+              className="vintage-exit-btn"
+              onClick={handleExit}
+              aria-label={t('Game menu')}
+              title={t('Game menu')}
+            >
+              ‹ {t('Game menu')}
+            </button>
+          )}
           <button
             type="button"
-            className="vintage-exit-btn"
-            onClick={onExit}
-            aria-label="Return to Wine Lounge"
-            title="Return to Wine Lounge"
+            className="vintage-restart-mini-btn"
+            onClick={handleRestart}
+            aria-label={t('Try again')}
+            title={t('Try again')}
           >
-            ‹ Lounge
+            ↻ {t('Try again')}
           </button>
-        )}
+        </div>
 
-        {/* Left: Life Indicator Cartouche */}
-        <div className="vintage-cartouche life-cartouche" aria-label={`Life: ${lives} of 1`}>
+        {/* Left: Matches Counter Cartouche */}
+        <div className="vintage-cartouche match-cartouche" aria-label={`${t('Matches')}: ${matchCount}`}>
           <span className="grape-mini-icon" aria-hidden="true">🍇</span>
-          <span className="cartouche-label">Life</span>
-          <div className="hearts-row">
-            <span
-              className={`heart-icon ${lives > 0 ? 'is-alive' : 'is-lost'}`}
-              aria-hidden="true"
-            >
-              {lives > 0 ? '❤️' : '🖤'}
-            </span>
-          </div>
+          <span className="cartouche-label">{t('Matches')}</span>
+          <strong className="cartouche-matches-value">{matchCount}</strong>
         </div>
 
         {/* Center: Ornate Vintage Title Plaque */}
@@ -284,13 +266,13 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
         {/* Right: Score Counter Cartouche */}
         <div className="vintage-cartouche score-cartouche">
           <div className="cartouche-score-header">
-            <span className="cartouche-label">Score</span>
+            <span className="cartouche-label">{t('Score')}</span>
             {calculateSpeed(matchCount) > baseSpeed && (
               <span className="cartouche-speed-tag">⚡ {(calculateSpeed(matchCount) / baseSpeed).toFixed(1)}x</span>
             )}
           </div>
           <strong className="cartouche-score-value">{score}</strong>
-          <span className="cartouche-best">Best: {bestScore}</span>
+          <span className="cartouche-best">{t('Best')}: {bestScore}</span>
         </div>
       </header>
 
@@ -400,8 +382,7 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
           <span className="stop-flourish left" aria-hidden="true">⚜️</span>
           <span className="stop-button-hand" aria-hidden="true">👆</span>
           <div className="stop-button-text">
-            <span className="stop-button-title">STOP</span>
-            <span className="stop-button-sub">Stop the wine glass at the perfect moment!</span>
+            <span className="stop-button-title">{t('Stop')}</span>
           </div>
           <span className="stop-flourish right" aria-hidden="true">⚜️</span>
         </button>
@@ -410,53 +391,7 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
       {/* ==============================================================================
           4. ELEGANT GAME OVER MODAL (Prompt Section 6)
           ============================================================================== */}
-      {phase === 'gameover' && (
-        <div className="overlay vintage-gameover-overlay" role="dialog" aria-modal="true">
-          <div className="card vintage-gameover-card">
-            <div className="gameover-crest">
-              {/* <span className="gameover-icon">🍷</span> */}
-              <h2 className="gameover-title">GAME OVER</h2>
-              <p className="gameover-sub">Tasting life expended • Precision sommelier challenge</p>
-            </div>
-
-            <div className="gameover-glass-display">
-              <VintageWineGlass isSilhouette={false} className="gameover-wine-glass" />
-            </div>
-
-            <div className="gameover-stats-grid">
-              <div className="gameover-stat-box">
-                <span className="stat-label">FINAL SCORE</span>
-                <strong className="stat-value text-accent">{score}</strong>
-              </div>
-              <div className="gameover-stat-box">
-                <span className="stat-label">ALL-TIME BEST</span>
-                <strong className="stat-value text-gold">{bestScore}</strong>
-              </div>
-            </div>
-
-            <div className="gameover-actions-row">
-              {onNewPlayer && <button type="button" className="vintage-exit-modal-btn" onClick={onNewPlayer}>New player</button>}
-              <button
-                type="button"
-                className="vintage-play-again-btn"
-                onClick={handleRestart}
-                autoFocus
-              >
-                PLAY AGAIN
-              </button>
-              {onExit && (
-                <button
-                  type="button"
-                  className="vintage-exit-modal-btn"
-                  onClick={onExit}
-                >
-                  ‹ Wine Lounge
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <GameResultDialog isOpen={phase === 'matched' || phase === 'gameover'} won={phase === 'matched'} score={score} onAction={phase === 'matched' ? handleContinue : handleRestart} actionLabel={phase === 'matched' ? 'Continue' : 'Play again'} onNewPlayer={onNewPlayer} onExit={onExit} />
     </div>
   );
 }

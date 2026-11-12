@@ -1140,10 +1140,13 @@ body {
   position: fixed;
   inset: 0;
   z-index: 1000;
+  padding: 20px;
+  border-radius: 0;
 }
 
 .modal-card {
-  max-height: 90vh;
+  width: 100%;
+  max-height: calc(100dvh - 40px);
   overflow-y: auto;
   text-align: left;
 }
@@ -1168,7 +1171,28 @@ body {
   color: var(--muted);
   font-size: 1.3rem;
   cursor: pointer;
+  display: grid;
+  place-items: center;
+  min-width: 48px;
+  min-height: 48px;
+  flex-shrink: 0;
 }
+
+.modal-header { gap: 12px; }
+.modal-header h2 { overflow-wrap: anywhere; }
+.modal-body { overflow-wrap: anywhere; }
+.game-result-dialog { border-radius: 8px; }
+.game-result-dialog .modal-header h2 { font: 1.35rem/1.35 var(--display); }
+.game-result-summary { display: grid; justify-items: center; gap: 12px; padding: 20px 0; }
+.game-result-summary > svg { width: 52px; height: 52px; color: var(--aqua); }
+.game-result-summary.is-win > svg { color: var(--sun); }
+.game-result-summary.is-gameover > svg { color: #d4435b; filter: drop-shadow(0 0 10px rgba(212, 67, 91, 0.45)); }
+.game-result-summary > span { color: var(--muted); }
+.game-result-summary > strong { font: 3.5rem/1.1 var(--display); }
+.game-result-dialog .modal-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.game-result-dialog .modal-actions button { min-height: 56px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border-radius: 8px; touch-action: manipulation; }
+.game-result-dialog .modal-actions svg { width: 22px; height: 22px; flex-shrink: 0; }
+.game-result-dialog button:focus-visible, .modal-close-btn:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
 
 .modal-actions {
   display: flex;
@@ -2126,6 +2150,40 @@ body {
   background: #720D28;
   border-color: #ffd700;
   transform: translateY(-1px);
+}
+
+.vintage-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vintage-restart-mini-btn {
+  background: rgba(74, 7, 24, 0.75);
+  border: 1.5px solid rgba(201, 164, 92, 0.55);
+  border-radius: 9999px;
+  color: #F5E8D0;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.vintage-restart-mini-btn:hover {
+  background: #720D28;
+  border-color: #ffd700;
+  color: #ffe699;
+  transform: translateY(-1px);
+}
+
+.cartouche-matches-value {
+  font-family: var(--display);
+  font-size: 1.15rem;
+  color: var(--sun);
+  font-weight: 700;
 }
 
 .vintage-cartouche {
@@ -3826,6 +3884,19 @@ body {
   filter: brightness(1.12);
   box-shadow: 0 8px 26px rgba(138, 19, 43, 0.6), 0 0 16px rgba(212, 175, 55, 0.35);
 }
+
+.simple-registration { display: grid; gap: 28px; padding: 24px 0; }
+.simple-registration .vintage-form-group { gap: 12px; margin: 0; }
+.simple-registration .vintage-label { color: var(--text); font-size: 1.05rem; }
+.simple-registration .vintage-input { min-height: 60px; font-size: 1rem; color: var(--text); background: var(--panel); border-color: var(--line-strong); }
+.simple-consent { border-top: 1px solid var(--line); padding-top: 20px; }
+.simple-consent label { display: flex; align-items: center; gap: 16px; min-height: 56px; cursor: pointer; }
+.simple-consent .checkbox-text { color: var(--text); font-size: 1rem; }
+.simple-consent input { width: 24px; height: 24px; flex-shrink: 0; accent-color: var(--coral); }
+.privacy-details-link { min-height: 48px; padding: 8px 0; border: 0; background: none; color: var(--muted); font: inherit; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.registration-submit { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 64px; border-radius: 8px; }
+.registration-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.privacy-details-link:focus-visible { outline: 3px solid var(--sun); outline-offset: 4px; }
 
 .vintage-agree-btn:disabled {
   opacity: 0.5;
