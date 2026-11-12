@@ -29,6 +29,7 @@ const tagalog: Record<string, string> = {
   'Play again': 'Maglaro muli',
   'Next player': 'Susunod na manlalaro',
   'Game menu': 'Menu ng laro',
+  'More options': 'Iba pang opsyon',
   'All games': 'Mga laro',
   'Register & play': 'Magrehistro at maglaro',
   "Let's play": 'Maglaro na',

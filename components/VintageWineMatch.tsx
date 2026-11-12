@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { Square } from 'lucide-react';
 import { VintageWineGlass } from './VintageWineGlass';
-import { Confetti } from './Confetti';
 import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
 import { useGameStore } from '../store/gameStore';
@@ -12,11 +12,12 @@ interface VintageWineMatchProps {
   onGameOver?: (finalScore: number) => void;
   onExit?: () => void;
   onNewPlayer?: () => void;
+  paused?: boolean;
 }
 
 type PlayPhase = 'idle' | 'moving' | 'stopping' | 'matched' | 'missed' | 'gameover';
 
-export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlayer }: VintageWineMatchProps) {
+export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlayer, paused = false }: VintageWineMatchProps) {
   const t = useTranslation();
   const settings = useGameStore((state) => state.settings);
   const [score, setScore] = useState(0);
@@ -30,7 +31,6 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
 
   const [phase, setPhase] = useState<PlayPhase>('moving');
   const [toast, setToast] = useState<string | null>(null);
-  const [confettiBurst, setConfettiBurst] = useState(0);
 
   // References for 60fps animation loop without React re-render overhead
   const boardRef = useRef<HTMLDivElement>(null);
@@ -60,6 +60,8 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
   const phaseRef = useRef<PlayPhase>('moving');
   const scoreRef = useRef(0);
   const bestScoreRef = useRef(bestScore);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   // Dynamic target silhouette position: changes to a new spot across the board after each successful match!
   const [targetX, setTargetX] = useState(66.5);
@@ -94,7 +96,7 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
   }, []);
 
   const handleStop = useCallback(() => {
-    if (phaseRef.current !== 'moving') return;
+    if (phaseRef.current !== 'moving' || pausedRef.current) return;
 
     soundManager.playClick();
     haptics.tick();
@@ -133,7 +135,6 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
       }
 
       setToast(`${t(isExact ? 'Perfect match!' : 'Match!')} +${points}`);
-      setConfettiBurst((b) => b + 1);
       setGamePhase('matched');
 
       soundManager.playSuccess();
@@ -150,12 +151,16 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
     }
   }, [calculateSpeed, tolerance, onScoreUpdate, onGameOver, t]);
 
-  const handleContinue = () => {
-    const nextX = pickNextTarget(targetXRef.current);
-    targetXRef.current = nextX;
-    setTargetX(nextX);
-    resetGlassToStart();
-  };
+  useEffect(() => {
+    if (phase !== 'matched' || paused) return;
+    const timer = window.setTimeout(() => {
+      const nextX = pickNextTarget(targetXRef.current);
+      targetXRef.current = nextX;
+      setTargetX(nextX);
+      resetGlassToStart();
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [phase, paused, pickNextTarget, resetGlassToStart]);
 
   const handleRestart = useCallback(() => {
     setScore(0);
@@ -170,11 +175,6 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
     resetGlassToStart();
   }, [baseSpeed, resetGlassToStart]);
 
-  const handleExit = () => {
-    onGameOver?.(scoreRef.current);
-    onExit?.();
-  };
-
   const handleStopRef = useRef(handleStop);
   handleStopRef.current = handleStop;
 
@@ -187,7 +187,7 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
-      if (phaseRef.current === 'moving') {
+      if (phaseRef.current === 'moving' && !pausedRef.current) {
         posRef.current += speedRef.current * dt;
         // Wrap smoothly: when glass leaves the right edge (112%), wrap back to left (-12%)
         if (posRef.current > 112) {
@@ -203,7 +203,7 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
 
     // Keyboard Spacebar listener
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !document.querySelector('[role="dialog"]') && !(e.target as HTMLElement).closest('button, input, select, textarea')) {
+      if (e.code === 'Space' && !document.querySelector('[role="dialog"]') && !(e.target as HTMLElement).closest('button, input, select, textarea, summary, a')) {
         e.preventDefault();
         if (!e.repeat) {
           handleStopRef.current();
@@ -221,177 +221,60 @@ export function VintageWineMatch({ onScoreUpdate, onGameOver, onExit, onNewPlaye
 
   return (
     <div className="vintage-picture-match-container">
-      {/* ==============================================================================
-          1. TOP LUXURY HEADER (matching Image 2)
-          ============================================================================== */}
-      <header className="vintage-top-header">
-        <div className="vintage-header-left">
-          {onExit && (
-            <button
-              type="button"
-              className="vintage-exit-btn"
-              onClick={handleExit}
-              aria-label={t('Game menu')}
-              title={t('Game menu')}
-            >
-              ‹ {t('Game menu')}
-            </button>
-          )}
-          <button
-            type="button"
-            className="vintage-restart-mini-btn"
-            onClick={handleRestart}
-            aria-label={t('Try again')}
-            title={t('Try again')}
-          >
-            ↻ {t('Try again')}
-          </button>
-        </div>
-
-        {/* Left: Matches Counter Cartouche */}
-        <div className="vintage-cartouche match-cartouche" aria-label={`${t('Matches')}: ${matchCount}`}>
-          <span className="grape-mini-icon" aria-hidden="true">🍇</span>
-          <span className="cartouche-label">{t('Matches')}</span>
-          <strong className="cartouche-matches-value">{matchCount}</strong>
-        </div>
-
-        {/* Center: Ornate Vintage Title Plaque */}
-        <div className="vintage-title-crest">
-          <div className="crest-gold-frame">
-            <span className="title-vintage-script">Vintage</span>
-            <span className="title-picture-match">PICTURE MATCH</span>
-          </div>
-        </div>
-
-        {/* Right: Score Counter Cartouche */}
-        <div className="vintage-cartouche score-cartouche">
-          <div className="cartouche-score-header">
-            <span className="cartouche-label">{t('Score')}</span>
-            {calculateSpeed(matchCount) > baseSpeed && (
-              <span className="cartouche-speed-tag">⚡ {(calculateSpeed(matchCount) / baseSpeed).toFixed(1)}x</span>
-            )}
-          </div>
-          <strong className="cartouche-score-value">{score}</strong>
-          <span className="cartouche-best">{t('Best')}: {bestScore}</span>
-        </div>
+      <header className="picture-match-hud">
+        <div className="picture-match-score"><span>{t('Score')}</span><strong>{score}</strong></div>
+        <div className="picture-match-count"><span>{t('Matches')}</span><strong>{matchCount}</strong></div>
       </header>
 
-      {/* ==============================================================================
-          2. MAIN STAGE & VINEYARD ESTATE (matching Image 2)
-          ============================================================================== */}
       <div
         ref={boardRef}
-        className={`vintage-stage-board ${phase === 'missed' ? 'is-shaking' : ''}`}
+        className="vintage-stage-board"
         onPointerDown={(e) => {
-          // Don't stop if clicking button or game over modal
           if ((e.target as HTMLElement).closest('button')) return;
           if (phase === 'moving') handleStop();
         }}
       >
-        {/* Golden Hour Vineyard Background Image */}
         <div
           className="vintage-background-layer"
           style={{ backgroundImage: 'url("/images/vineyard-estate.jpg")' }}
         />
 
-        {/* Velvet Drapery Top & Corners */}
-        <div className="velvet-curtain-top" aria-hidden="true" />
-        <div className="velvet-curtain-left" aria-hidden="true" />
-        <div className="velvet-curtain-right" aria-hidden="true" />
-
-        {/* Hanging Grape Clusters in Upper Corners */}
-        <div className="grape-cluster-left" aria-hidden="true">🍇</div>
-        <div className="grape-cluster-right" aria-hidden="true">🍇</div>
-
-        {/* Horizontal Dashed Alignment Guideline */}
-        <div className="vintage-alignment-lane" aria-hidden="true" />
-
-        {/* Ornate Gold Picture Frame containing the Target Silhouette (Shifts position after each match!) */}
         <div className="vintage-gold-picture-frame" style={{ left: `${targetX}%` }}>
           <div className="frame-outer-molding">
-            <div className="frame-corner-acanthus tl" />
-            <div className="frame-corner-acanthus tr" />
-            <div className="frame-corner-acanthus bl" />
-            <div className="frame-corner-acanthus br" />
-            <div className="frame-grape-accent" />
-
-            {/* Parchment Canvas Backing */}
             <div className="frame-canvas-inner">
               <VintageWineGlass isSilhouette={true} className="silhouette-target-glass" />
             </div>
           </div>
         </div>
 
-        {/* Single Moving Realistic Crystal Wine Glass (Left to Right) */}
         <div
           ref={glassRef}
           className={`moving-glass-wrapper ${phase === 'matched' ? 'is-snapped' : ''}`}
         >
-          {phase === 'moving' && (
-            <div className="motion-speed-box" aria-hidden="true">
-              <span className="speed-line line-1" />
-              <span className="speed-line line-2" />
-              <span className="speed-line line-3" />
-              <span className="speed-line line-4" />
-            </div>
-          )}
-          <div className="moving-glass-glow-trail" />
           <VintageWineGlass isSilhouette={false} className="moving-wine-glass" />
         </div>
 
-        {/* Foreground Rustic Wooden Table with Wine Barrel & Bottle */}
-        <div className="cellar-table-foreground">
-          {/* Left: Vintage Oak Barrel with Gold Crest */}
-          <div className="foreground-barrel" aria-hidden="true">
-            <div className="barrel-gold-crest">⚜️</div>
-            <span className="barrel-grapes">🍇</span>
-          </div>
-
-          {/* Right: Bordeaux Wine Bottle & Grapes */}
-          <div className="foreground-bottle-group" aria-hidden="true">
-            <span className="bottle-grapes">🍇</span>
-            <div className="wine-bottle-silhouette">
-              <span className="bottle-label-crest">CHÂTEAU</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Toast Notification (A Perfect Match / Missed) */}
         {toast && (
-          <div className={`vintage-match-toast ${phase === 'matched' ? 'is-success' : 'is-fail'}`}>
+          <div className={`vintage-match-toast ${phase === 'matched' ? 'is-success' : 'is-fail'}`} role="status" aria-live="polite" aria-atomic="true">
             {toast}
           </div>
         )}
 
-        {/* Confetti Explosion on Match */}
-        {phase === 'matched' && (
-          <Confetti key={confettiBurst} x={targetX + 4} y={50} />
-        )}
       </div>
 
-      {/* ==============================================================================
-          3. BOTTOM ORNATE "STOP" BUTTON (matching reference1.png & reference2.png)
-          ============================================================================== */}
       <footer className="vintage-controls-footer">
         <button
           type="button"
           className="vintage-stop-button"
           onClick={handleStop}
-          disabled={phase !== 'moving'}
+          disabled={phase !== 'moving' || paused}
         >
-          <span className="stop-flourish left" aria-hidden="true">⚜️</span>
-          <span className="stop-button-hand" aria-hidden="true">👆</span>
-          <div className="stop-button-text">
-            <span className="stop-button-title">{t('Stop')}</span>
-          </div>
-          <span className="stop-flourish right" aria-hidden="true">⚜️</span>
+          <Square aria-hidden="true" />
+          <span className="stop-button-title">{t('Stop')}</span>
         </button>
       </footer>
 
-      {/* ==============================================================================
-          4. ELEGANT GAME OVER MODAL (Prompt Section 6)
-          ============================================================================== */}
-      <GameResultDialog isOpen={phase === 'matched' || phase === 'gameover'} won={phase === 'matched'} score={score} onAction={phase === 'matched' ? handleContinue : handleRestart} actionLabel={phase === 'matched' ? 'Continue' : 'Play again'} onNewPlayer={onNewPlayer} onExit={onExit} />
+      <GameResultDialog isOpen={phase === 'gameover'} won={false} score={score} onAction={handleRestart} onNewPlayer={onNewPlayer} onExit={onExit} />
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ArrowLeft, Gamepad2, Trophy, UserRoundPlus } from 'lucide-react';
+import { ArrowLeft, Ellipsis, Gamepad2, Trophy, UserRoundPlus } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { VintageWineMatch } from '../components/VintageWineMatch';
 import { TargetTimerGame } from '../components/TargetTimerGame';
+import { Modal } from '../components/Modal';
 import { useGameStore } from '../store/gameStore';
 import { useTranslation } from '../services/i18n';
 import type { GameMode } from '../types';
@@ -36,6 +37,9 @@ export function GameScreen() {
   const settings = useGameStore((state) => state.settings);
   const [scores, setScores] = useState(readScores);
   const [currentScore, setCurrentScore] = useState<number | null>(null);
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const isPictureMatch = mode === 'picture-match';
   const target = settings.timerTargetMode === 'fixed' && Number.isFinite(settings.timerCustomTarget) && (settings.timerCustomTarget ?? 0) >= 1
     ? settings.timerCustomTarget! : 24;
 
@@ -56,26 +60,37 @@ export function GameScreen() {
     navigate('/player', { replace: true });
   };
   const standings = scores.filter((entry) => entry.mode === mode).slice(0, 8);
+  const scoreList = standings.length === 0 ? <p className="kiosk-empty">{t('The top spot is waiting for you.')}</p> :
+    <ol>{standings.map((entry, index) => <li key={entry.id}><span className="kiosk-rank">{String(index + 1).padStart(2, '0')}</span><strong>{entry.name}</strong><span>{entry.score}</span></li>)}</ol>;
 
   return (
-    <main className="kiosk-play">
+    <main className={`kiosk-play ${isPictureMatch ? 'picture-play' : ''}`}>
       <header className="kiosk-play-header">
-        <button type="button" className="kiosk-nav-button" onClick={() => navigate('/game')}><ArrowLeft aria-hidden="true" /><Gamepad2 aria-hidden="true" />{t('Game menu')}</button>
-        {mode !== 'target-timer' && <div className="kiosk-player-name"><span>{t('Player')}</span><strong>{player.name}</strong></div>}
-        <button type="button" className="kiosk-new-player" onClick={newPlayer}><UserRoundPlus aria-hidden="true" /><span><strong>{t('Next player')}</strong><small>{t('Register & play')}</small></span></button>
+        <button type="button" className="kiosk-nav-button" onClick={() => navigate('/game')}><ArrowLeft aria-hidden="true" />{!isPictureMatch && <Gamepad2 aria-hidden="true" />}{t('Game menu')}</button>
+        {isPictureMatch ? <>
+          <strong className="picture-player-name">{player.name}</strong>
+          <details className="picture-options" open={optionsOpen} onToggle={(event) => setOptionsOpen(event.currentTarget.open)} onKeyDown={(event) => { if (event.key === 'Escape') setOptionsOpen(false); }} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOptionsOpen(false); }}>
+            <summary aria-label={t('More options')} title={t('More options')}><Ellipsis aria-hidden="true" /></summary>
+            <div className="picture-options-list">
+              <button type="button" onClick={() => { setOptionsOpen(false); setShowLeaderboard(true); }}><Trophy aria-hidden="true" />{t('Leaderboard')}</button>
+              <button type="button" onClick={newPlayer}><UserRoundPlus aria-hidden="true" />{t('Next player')}</button>
+            </div>
+          </details>
+        </> : <button type="button" className="kiosk-new-player" onClick={newPlayer}><UserRoundPlus aria-hidden="true" /><span><strong>{t('Next player')}</strong><small>{t('Register & play')}</small></span></button>}
       </header>
-      <div className="kiosk-play-title"><div><span>CHÂTEAU VINTAGE / GAME LOUNGE</span><h1>{mode === 'target-timer' ? 'Time Stop' : 'Vintage Picture Match'}</h1></div><div className="kiosk-current-score"><span>{t('Last score')}</span><strong>{currentScore ?? '—'}</strong></div></div>
+      <div className="kiosk-play-title"><div><span>{isPictureMatch ? 'CHÂTEAU VINTAGE' : 'CHÂTEAU VINTAGE / GAME LOUNGE'}</span><h1>{isPictureMatch ? t('Picture match') : 'Time Stop'}</h1></div>{!isPictureMatch && <div className="kiosk-current-score"><span>{t('Last score')}</span><strong>{currentScore ?? '—'}</strong></div>}</div>
       <div className="kiosk-play-grid">
         <div className="kiosk-play-stage">
           {mode === 'target-timer' ? <TargetTimerGame target={target} playerName={player.name} onResult={saveScore} onNewPlayer={newPlayer} onExit={() => navigate('/game')} /> :
-            <VintageWineMatch onScoreUpdate={setCurrentScore} onGameOver={saveScore} onExit={() => navigate('/game')} onNewPlayer={newPlayer} />}
+            <VintageWineMatch paused={optionsOpen || showLeaderboard} onScoreUpdate={setCurrentScore} onGameOver={saveScore} onExit={() => navigate('/game')} onNewPlayer={newPlayer} />}
         </div>
-        <aside className="kiosk-leaderboard" aria-label={t('Leaderboard')}>
+          {!isPictureMatch && <aside className="kiosk-leaderboard" aria-label={t('Leaderboard')}>
           <div className="kiosk-leaderboard-heading"><Trophy aria-hidden="true" /><div><span>{t('This device')}</span><h2>{t('Leaderboard')}</h2></div><span>{t('Top 8')}</span></div>
-          {standings.length === 0 ? <p className="kiosk-empty">{t('The top spot is waiting for you.')}</p> : <ol>{standings.map((entry, index) => <li key={entry.id}><span className="kiosk-rank">{String(index + 1).padStart(2, '0')}</span><strong>{entry.name}</strong><span>{entry.score}</span></li>)}</ol>}
-        </aside>
+          {scoreList}
+        </aside>}
       </div>
-      <footer className="kiosk-play-footer"><span>{mode === 'target-timer' ? t('One attempt per round') : 'Vintage Picture Match'}</span></footer>
+      {!isPictureMatch && <footer className="kiosk-play-footer"><span>{t('One attempt per round')}</span></footer>}
+      <Modal title={t('Leaderboard')} isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} maxWidth="540px"><div className="picture-standings">{scoreList}</div></Modal>
     </main>
   );
 }
