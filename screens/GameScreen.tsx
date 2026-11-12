@@ -44,11 +44,33 @@ export function GameScreen() {
         {isPictureMatch && <strong className="picture-player-name">{player.name}</strong>}
         <button type="button" className="kiosk-new-player" onClick={newPlayer}><UserRoundPlus aria-hidden="true" /><span><strong>{t('Next player')}</strong><small>{t('Register & play')}</small></span></button>
       </header>
-      <div className="kiosk-play-title"><div><span>{isPictureMatch ? 'CHÂTEAU VINTAGE' : 'CHÂTEAU VINTAGE / GAME LOUNGE'}</span><h1>{isPictureMatch ? t('Picture match') : 'Time Stop'}</h1></div>{!isPictureMatch && <div className="kiosk-current-score"><span>{t('Last time')}</span><strong>{currentScore ? formatEventScore(currentScore) : '—'}</strong></div>}</div>
+      <div className="kiosk-play-title">
+        <div>
+          <span>{isPictureMatch ? 'CHÂTEAU VINTAGE' : 'CHÂTEAU VINTAGE / GAME LOUNGE'}</span>
+          <h1>{isPictureMatch ? t('Picture match') : 'THE PERFECT 23'}</h1>
+        </div>
+        <div className="kiosk-current-score">
+          <span>{t(isPictureMatch ? 'Last score' : 'Last time')}</span>
+          <strong>{currentScore ? formatEventScore(currentScore) : '—'}</strong>
+        </div>
+      </div>
       <div className="kiosk-play-grid">
         <div className="kiosk-play-stage">
-          {mode === 'target-timer' ? <TargetTimerGame {...rules} playerName={player.name} onResult={(result) => saveScore({ mode: 'target-timer', ...result })} onNewPlayer={newPlayer} onExit={() => navigate('/game')} /> :
-            <VintageWineMatch onGameOver={(percentage) => saveScore({ mode: 'picture-match', percentage })} onExit={() => navigate('/game')} onNewPlayer={newPlayer} />}
+          {mode === 'target-timer' ? (
+            <TargetTimerGame
+              {...rules}
+              playerName={player.name}
+              onResult={(result) => saveScore({ mode: 'target-timer', ...result })}
+              onNewPlayer={newPlayer}
+              onExit={() => navigate('/game')}
+            />
+          ) : (
+            <VintageWineMatch
+              onGameOver={(score, percentage) => saveScore({ mode: 'picture-match', percentage, score })}
+              onExit={() => navigate('/game')}
+              onNewPlayer={newPlayer}
+            />
+          )}
         </div>
         <aside id="game-leaderboard" className="kiosk-leaderboard" aria-label={t('Leaderboard')}>
           <div className="kiosk-leaderboard-heading"><Trophy aria-hidden="true" /><div><span>{t('This device')}</span><h2>{t('Leaderboard')}</h2></div><span>{t('Top 8')}</span></div>

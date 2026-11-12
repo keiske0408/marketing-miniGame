@@ -3,6 +3,7 @@ export type Difficulty = 'chill' | 'normal' | 'hard';
 export type Language = 'en' | 'tl' | 'es' | 'fr' | 'de';
 export type GameMode = 'picture-match' | 'target-timer';
 export type TimerTargetMode = 'dynamic' | 'fixed';
+export type PictureMatchMode = 'single' | 'multi';
 
 export interface UserProfile {
   id: string;
@@ -32,6 +33,7 @@ export interface UserSettings {
   timerWinMin?: number;
   timerWinMax?: number;
   pictureSpeed?: number;
+  pictureMatchMode?: PictureMatchMode;
   requirePlayerName?: boolean;
   requirePlayerEmail?: boolean;
   requirePlayerPhone?: boolean;

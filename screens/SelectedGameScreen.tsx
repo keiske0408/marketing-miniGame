@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Clapperboard, Gamepad2, Play, Settings2, UserRoundPlus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clapperboard, Gamepad2, Play, Sliders, UserRoundPlus } from 'lucide-react';
 import { Screen } from '../components/Screen';
 import { useGameStore } from '../store/gameStore';
 import { useTranslation } from '../services/i18n';
@@ -18,7 +18,7 @@ export function SelectedGameScreen() {
       <div className="kiosk-selected-layout">
         <div className="kiosk-selected-copy">
           <div className="kiosk-brand">CHÂTEAU VINTAGE <span> / GAME LOUNGE</span></div>
-          <div className="kiosk-heading"><span>{t('YOUR NEXT CHALLENGE')}</span><h1>{mode === 'target-timer' ? 'Time Stop' : 'Vintage Picture Match'}</h1></div>
+          <div className="kiosk-heading"><span>{t('YOUR NEXT CHALLENGE')}</span><h1>{mode === 'target-timer' ? 'THE PERFECT 23' : 'Vintage Picture Match'}</h1></div>
           <div className="kiosk-game-tags"><span><Gamepad2 aria-hidden="true" />{t('Solo challenge')}</span><span>{t(mode === 'target-timer' ? 'Perfect timing' : 'Find your match')}</span></div>
           <div className="kiosk-menu-actions">
             <button type="button" className="btn btn-primary kiosk-play-cta" onClick={() => navigate(player ? '/play' : '/player')}>
@@ -33,11 +33,19 @@ export function SelectedGameScreen() {
         <span className="footer-vintage-motto">CHÂTEAU VINTAGE · GRAND CRU ARCADE</span>
         <button
           type="button"
-          className="vintage-admin-mini-btn"
+          className="vintage-admin-medallion-btn"
+          style={{ width: 'auto', padding: '8px 22px' }}
           onClick={() => navigate('/settings', { state: { from: '/game' } })}
         >
-          <Settings2 className="w-4 h-4 text-gold" aria-hidden="true" />
-          <span>{t('Admin settings')}</span>
+          <div className="medallion-inner" style={{ gap: '10px' }}>
+            <span className="medallion-gear" aria-hidden="true">
+              <Sliders className="w-4 h-4 text-gold" />
+            </span>
+            <div className="medallion-text">
+              <strong className="medallion-title" style={{ fontSize: '0.85rem' }}>{t('Admin settings')}</strong>
+            </div>
+            <span className="medallion-flourish" aria-hidden="true">⚜️</span>
+          </div>
         </button>
       </footer>
     </Screen>

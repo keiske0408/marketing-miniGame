@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   timerWinMin: 22.34,
   timerWinMax: 23.99,
   pictureSpeed: 1,
+  pictureMatchMode: 'multi',
   requirePlayerName: false,
   requirePlayerEmail: false,
   requirePlayerPhone: false,
@@ -39,11 +40,11 @@ export const DEFAULT_SETTINGS: UserSettings = {
 export const HOW_TO_PLAY_STEPS = [
   {
     title: 'Game 1: Vintage Picture Match (Wine Edition)',
-    desc: 'Stop the moving glass once by tapping Stop or pressing Space. Your result is the percentage of horizontal overlap with its outline. Full alignment earns 100%. One attempt per round.',
+    desc: 'In Multi-match mode, each successful stop earns another match until you miss. In One match mode, the game ends after your first successful match. Tap Stop or press Space when the moving glass overlaps its outline.',
   },
   {
-    title: 'Game 2: Time Stop',
-    desc: 'Start the round and stop as close as you can to the target time. The event host sets the winning minimum and maximum in Settings. Results are shown in seconds.',
+    title: 'Game 2: THE PERFECT 23',
+    desc: 'A Stop the Clock Challenge. 23 Seconds. One Perfect Moment. Participants must stop a running timer as close as possible to 23.00 seconds to win a prize. The event host can adjust the target and winning range in Settings.',
   },
   {
     title: 'Claim Tasting & Bottle Rewards',

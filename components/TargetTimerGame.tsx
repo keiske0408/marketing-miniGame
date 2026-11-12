@@ -22,6 +22,7 @@ export function TargetTimerGame({ target, winMin, winMax, playerName, onResult, 
   const [result, setResult] = useState<TimerResult | null>(null);
   const [displayTime, setDisplayTime] = useState(0);
   const startedAt = useRef(0);
+  const lastSecRef = useRef(-1);
   const phaseRef = useRef<Phase>('ready');
   const actionRef = useRef<() => void>(() => {});
   const roundRules = useRef<TimerRules>({ target, winMin, winMax });
@@ -33,25 +34,29 @@ export function TargetTimerGame({ target, winMin, winMax, playerName, onResult, 
       setPhase('ready');
       setResult(null);
       setDisplayTime(0);
+      lastSecRef.current = -1;
       return;
     }
     if (phaseRef.current === 'ready') {
       roundRules.current = { target, winMin, winMax };
       startedAt.current = performance.now();
       setDisplayTime(0);
+      lastSecRef.current = 0;
       phaseRef.current = 'running';
       setPhase('running');
       soundManager.playClick();
+      soundManager.startPouring(roundRules.current.target);
       haptics.tick();
       return;
     }
+    soundManager.stopPouring();
+    soundManager.playClick();
     const elapsed = displayedSeconds((performance.now() - startedAt.current) / 1000);
     const stopped = { ...roundRules.current, elapsed };
     phaseRef.current = 'finished';
     setPhase('finished');
     setDisplayTime(elapsed);
     setResult(stopped);
-    onResult(stopped);
     if (timerWon(stopped)) {
       soundManager.playSuccess();
       haptics.success();
@@ -59,6 +64,7 @@ export function TargetTimerGame({ target, winMin, winMax, playerName, onResult, 
       soundManager.playFail();
       haptics.fail();
     }
+    onResult(stopped);
   };
   actionRef.current = action;
 
@@ -67,7 +73,13 @@ export function TargetTimerGame({ target, winMin, winMax, playerName, onResult, 
     let frame = 0;
     const updateTime = (now: number) => {
       if (phaseRef.current !== 'running') return;
-      setDisplayTime((now - startedAt.current) / 1000);
+      const elapsed = (now - startedAt.current) / 1000;
+      setDisplayTime(elapsed);
+      const wholeSec = Math.floor(elapsed);
+      if (wholeSec > lastSecRef.current && wholeSec > 0) {
+        lastSecRef.current = wholeSec;
+        soundManager.playTimerTick(Math.abs(elapsed - roundRules.current.target) <= 1.05);
+      }
       frame = requestAnimationFrame(updateTime);
     };
     frame = requestAnimationFrame(updateTime);
@@ -81,13 +93,16 @@ export function TargetTimerGame({ target, winMin, winMax, playerName, onResult, 
       actionRef.current();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      soundManager.stopPouring();
+    };
   }, []);
 
   return (
     <div className="time-stop-board">
       <div className="time-stop-board-header">
-        <div className="time-stop-board-brand"><span>CHÂTEAU VINTAGE</span><strong>TIME STOP</strong></div>
+        <div className="time-stop-board-brand"><span>{t('A Stop the Clock Challenge')}</span><strong>THE PERFECT 23</strong><small>{t('23 Seconds. One Perfect Moment.')}</small></div>
         <div className="time-stop-player"><span>{t('Player')}</span><strong>{playerName}</strong></div>
       </div>
       <div className="timer-game-inner time-stop-inner">

@@ -3,12 +3,15 @@ import { ArrowRight, Sliders, Wine, Clock } from 'lucide-react';
 import { Screen } from '../components/Screen';
 import { useGameStore } from '../store/gameStore';
 import { useTranslation } from '../services/i18n';
+import { timerRules } from '../services/eventRules';
 import type { GameMode } from '../types';
 
 export function HomeScreen() {
   const t = useTranslation();
   const navigate = useNavigate();
   const setGameMode = useGameStore((state) => state.setGameMode);
+  const settings = useGameStore((state) => state.settings);
+  const target = timerRules(settings).target;
   const selectGame = (mode: GameMode) => {
     setGameMode(mode);
     navigate('/game');
@@ -27,7 +30,7 @@ export function HomeScreen() {
 
       {/* Ornate 2-Game Selection Grid */}
       <div className="vintage-game-selection-grid">
-        {/* Game 1: Time Stop */}
+        {/* Game 1: The Perfect 23 */}
         <button
           type="button"
           className="vintage-selection-card time-stop-card"
@@ -52,11 +55,11 @@ export function HomeScreen() {
 
           <div className="card-content-footer">
             <div className="card-title-row">
-              <h3>Time Stop</h3>
+              <h3>THE PERFECT 23</h3>
               <ArrowRight className="card-arrow" aria-hidden="true" />
             </div>
             <p className="card-description">
-              {t('Stop at the target time.')}
+              {t('The challenge: Participants must stop a running timer as close as possible to')} {target.toFixed(2)} {t('seconds to win a prize.')}
             </p>
             <span className="card-action-pill">{t('Select game')} ↗</span>
           </div>

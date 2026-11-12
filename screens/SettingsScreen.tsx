@@ -7,7 +7,8 @@ import { MenuButton } from '../components/MenuButton';
 import { Modal } from '../components/Modal';
 import { useGameStore } from '../store/gameStore';
 import { useTranslation } from '../services/i18n';
-import type { Difficulty, ThemeMode } from '../types';
+import { soundManager } from '../services/audio';
+import type { Difficulty, PictureMatchMode, ThemeMode } from '../types';
 import { displayedSeconds, timerRules, validTimerRules } from '../services/eventRules';
 
 export function SettingsScreen() {
@@ -78,9 +79,9 @@ export function SettingsScreen() {
         <h2 className="section-title">{t('Event controls')}</h2>
         <div className="settings-card">
           <form className="event-timer-form" onSubmit={saveTimerRules} noValidate>
-            <h3>Time Stop</h3>
+            <h3>THE PERFECT 23</h3>
             {([
-              ['target', 'Time Stop target (seconds)'],
+              ['target', 'THE PERFECT 23 target (seconds)'],
               ['winMin', 'Winning minimum (seconds)'],
               ['winMax', 'Winning maximum (seconds)'],
             ] as const).map(([field, label]) => (
@@ -96,12 +97,25 @@ export function SettingsScreen() {
               {t('Saved winning range (inclusive)')}: <strong>{rules.winMin.toFixed(2)}s – {rules.winMax.toFixed(2)}s</strong>
             </p>
             {timerError && <p id="timer-settings-error" className="text-danger" role="alert">{t('Enter a target from 1 to 300 seconds and an ordered winning range from 0 to 300 seconds.')}</p>}
-            <button type="submit" className="btn small-btn">{t('Save Time Stop rules')}</button>
+            <button type="submit" className="btn small-btn">{t('Save THE PERFECT 23 rules')}</button>
           </form>
           <div className="picture-speed-setting">
+            <div className="setting-row">
+              <label htmlFor="picture-match-mode" className="setting-row-label">{t('Picture Match mode')}</label>
+              <select id="picture-match-mode" className="select-input"
+                value={settings.pictureMatchMode ?? 'multi'}
+                onChange={(event) => {
+                  soundManager.playClick();
+                  updateSettings({ pictureMatchMode: event.target.value as PictureMatchMode });
+                }}>
+                <option value="multi">{t('Multi-match (continue until you miss)')}</option>
+                <option value="single">{t('One match (end after one success)')}</option>
+              </select>
+            </div>
+            <p className="settings-hint">{t('Multi-match lets players keep matching until they miss. One match ends after the first successful match.')}</p>
             <Slider label={t('Picture Match speed')} value={settings.pictureSpeed ?? 1}
               min={0.25} max={2} step={0.05} unit="×" onChange={(pictureSpeed) => updateSettings({ pictureSpeed })} />
-            <p className="settings-hint">{t('Lower is slower. Applies alongside difficulty. One attempt per round.')}</p>
+            <p className="settings-hint">{t('Lower is slower. Applies alongside difficulty.')}</p>
           </div>
           <Toggle label={t('Require player name')} checked={Boolean(settings.requirePlayerName)}
             onChange={(value) => updateSettings({ requirePlayerName: value })} />

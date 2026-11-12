@@ -48,6 +48,10 @@ export function normalizeSettings(saved: Partial<UserSettings>): UserSettings {
     console.warn('Invalid saved Picture Match speed; restoring 1x.');
     settings.pictureSpeed = 1;
   }
+  if (settings.pictureMatchMode !== 'single' && settings.pictureMatchMode !== 'multi') {
+    console.warn('Invalid saved Picture Match mode; restoring multi-match.');
+    settings.pictureMatchMode = DEFAULT_SETTINGS.pictureMatchMode;
+  }
   return settings;
 }
 

@@ -54,6 +54,65 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const INTERACTIVE_SELECTOR = [
+      'button:not(:disabled)',
+      '[role="button"]:not([aria-disabled="true"])',
+      '[role="tab"]',
+      '[role="switch"]',
+      '[role="checkbox"]',
+      '[role="radio"]',
+      '[role="link"]',
+      'a[href]',
+      'input[type="button"]:not(:disabled)',
+      'input[type="submit"]:not(:disabled)',
+      'input[type="reset"]:not(:disabled)',
+      'input[type="checkbox"]:not(:disabled)',
+      'input[type="radio"]:not(:disabled)',
+      '.btn',
+      '.kiosk-nav-button',
+      '.kiosk-play-cta',
+      '.kiosk-new-player',
+      '.vintage-selection-card',
+      '.vintage-admin-medallion-btn',
+      '.medallion-btn',
+      '.tab-btn',
+      '.menu-btn',
+      'summary',
+    ].join(', ');
+
+    const triggerClickSound = (target: EventTarget | null) => {
+      if (!(target instanceof Element)) return;
+      const interactive = target.closest(INTERACTIVE_SELECTOR);
+      if (interactive) {
+        soundManager.playClick();
+      }
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      triggerClickSound(event.target);
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      triggerClickSound(event.target);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      triggerClickSound(event.target);
+    };
+
+    window.addEventListener('pointerdown', handlePointerDown, { capture: true, passive: true });
+    window.addEventListener('click', handleClick, { capture: true, passive: true });
+    window.addEventListener('keydown', handleKeyDown, { capture: true, passive: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown, { capture: true });
+      window.removeEventListener('click', handleClick, { capture: true });
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <div className="app-shell">

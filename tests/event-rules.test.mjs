@@ -55,6 +55,9 @@ test('settings preserve old preferences, gain defaults, and normalize invalid ru
   assert.equal(normalizeSettings({ pictureSpeed: 3 }).pictureSpeed, 1);
   assert.equal(normalizeSettings({ pictureSpeed: 0.25 }).pictureSpeed, 0.25);
   assert.equal(normalizeSettings({ pictureSpeed: 2 }).pictureSpeed, 2);
+  assert.equal(settings.pictureMatchMode, 'multi');
+  assert.equal(normalizeSettings({ pictureMatchMode: 'single' }).pictureMatchMode, 'single');
+  assert.equal(normalizeSettings({ pictureMatchMode: 'invalid' }).pictureMatchMode, 'multi');
   assert.deepEqual(timerRules(normalizeSettings({ timerWinMin: 25, timerWinMax: 20 })), rules);
 });
 
