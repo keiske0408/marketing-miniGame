@@ -27,7 +27,7 @@ export interface UserSettings {
   theme: ThemeMode;
   language: Language;
   difficulty: Difficulty;
-  // Event Host / Admin settings for Perfect Pour Timer
+  // Event Host / Admin settings for Stop the Clock Challenge
   timerTargetMode?: TimerTargetMode; // 'dynamic' (randomized each round) or 'fixed'
   timerCustomTarget?: number;        // e.g. 5.0, 3.0, 7.0 seconds
   timerWinMin?: number;
@@ -37,7 +37,15 @@ export interface UserSettings {
   requirePlayerName?: boolean;
   requirePlayerEmail?: boolean;
   requirePlayerPhone?: boolean;
+  designColor?: DesignColor;
+  customDesignColor?: string; // #rrggbb, used when designColor is 'custom'
+  eventBackground?: EventBackground;
+  showLeaderboard?: boolean;
+  showGuidelines?: boolean;
 }
+
+export type DesignColor = 'violet' | 'mischka' | 'slate' | 'custom';
+export type EventBackground = 'ribbon' | 'circles';
 
 export interface Consents {
   termsAccepted: boolean;

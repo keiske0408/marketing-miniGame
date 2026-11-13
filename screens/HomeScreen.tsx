@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Sliders, Wine, Clock } from 'lucide-react';
-import { Screen } from '../components/Screen';
+import { ArrowRight, Sliders, Wine, Clock, Gamepad2, Sparkles } from 'lucide-react';
+import { EventBrand } from '../components/EventBrand';
+import { TIMER_GAME_NAME } from '../config/constants';
 import { useGameStore } from '../store/gameStore';
 import { useTranslation } from '../services/i18n';
 import { timerRules } from '../services/eventRules';
 import type { GameMode } from '../types';
+import wineGlass from '../assets/wine_game_UI/SCREEN 2/wine glass.png';
 
 export function HomeScreen() {
   const t = useTranslation();
@@ -18,107 +20,97 @@ export function HomeScreen() {
   };
 
   return (
-    <Screen className="kiosk-selection vintage-landing-screen" maxWidth="980px">
-      {/* Top Vintage Vineyard Crest */}
-      <div className="vintage-brand-crest">
-        <div className="crest-insignia">🍇 CHÂTEAU VINTAGE ⚜️ GRAND CRU ARCADE</div>
-      </div>
-
-      <div className="vintage-landing-header">
-        <h1 className="landing-title">{t('Choose a game')}</h1>
-      </div>
-
-      {/* Ornate 2-Game Selection Grid */}
-      <div className="vintage-game-selection-grid">
-        {/* Game 1: The Perfect 23 */}
-        <button
-          type="button"
-          className="vintage-selection-card time-stop-card"
-          onClick={() => selectGame('target-timer')}
-        >
-          <div className="card-top-tag">
-            <span className="game-num">{t('CHALLENGE')} 01</span>
-            <span className="game-type-badge">
-              <Clock className="w-3.5 h-3.5" aria-hidden="true" />
-              {t('Precision timer')}
-            </span>
+    <main className="event-theme event-page">
+      <div className="event-entry">
+        <header className="event-lobby-header">
+          <div className="event-lobby-orbit" aria-hidden="true">
+            <Sparkles className="event-lobby-star" />
+            <Sparkles className="event-lobby-star" />
+            <Sparkles className="event-lobby-star" />
           </div>
-
-          <div className="card-media-stage">
-            <div className="wine-glow-backdrop" />
-            <img
-              src="/images/vintage-wine-glass.png"
-              alt="Vintage crystal wine glass"
-              className="card-wine-glass-preview"
-            />
+          <EventBrand />
+          <div className="event-lobby-title">
+            <span className="event-eyebrow">{t('YOUR NEXT CHALLENGE')}</span>
+            <h1 className="event-heading">{t('Choose a game')}</h1>
+            <div className="event-lobby-divider" aria-hidden="true"><span /><Gamepad2 /><span /></div>
           </div>
-
-          <div className="card-content-footer">
-            <div className="card-title-row">
-              <h3>THE PERFECT 23</h3>
-              <ArrowRight className="card-arrow" aria-hidden="true" />
+        </header>
+        <div className="event-game-grid">
+          <button
+            type="button"
+            className="event-game-card"
+            onClick={() => selectGame('target-timer')}
+          >
+            <div className="event-card-tags">
+              <span className="game-num">{t('CHALLENGE')} 01</span>
+              <span className="game-type-badge">
+                <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+                {t('Precision timer')}
+              </span>
             </div>
-            <p className="card-description">
-              {t('The challenge: Participants must stop a running timer as close as possible to')} {target.toFixed(2)} {t('seconds to win a prize.')}
-            </p>
-            <span className="card-action-pill">{t('Select game')} ↗</span>
-          </div>
-        </button>
 
-        {/* Game 2: Vintage Picture Match */}
-        <button
-          type="button"
-          className="vintage-selection-card picture-match-card"
-          onClick={() => selectGame('picture-match')}
-        >
-          <div className="card-top-tag">
-            <span className="game-num">{t('CHALLENGE')} 02</span>
-            <span className="game-type-badge">
-              <Wine className="w-3.5 h-3.5" aria-hidden="true" />
-              {t('Picture match')}
-            </span>
-          </div>
-
-          <div className="card-media-stage picture-stage">
-            <img
-              src="/images/vintage-game-scene.jpg"
-              alt="Vintage vineyard estate picture match scene"
-              className="card-vineyard-preview"
-            />
-            <div className="picture-stage-overlay" />
-          </div>
-
-          <div className="card-content-footer">
-            <div className="card-title-row">
-              <h3>Vintage Picture Match</h3>
-              <ArrowRight className="card-arrow" aria-hidden="true" />
+            <div className="event-card-media event-card-timer">
+              <img
+                src={wineGlass}
+                alt=""
+              />
             </div>
-            <p className="card-description">
-              {t('Match the glass to its outline.')}
-            </p>
-            <span className="card-action-pill">{t('Select game')} ↗</span>
-          </div>
-        </button>
-      </div>
 
-      {/* Art-Rich Ornate Admin Settings Medallion Button */}
-      <div className="vintage-landing-footer">
-        <button
-          type="button"
-          className="vintage-admin-medallion-btn"
-          onClick={() => navigate('/settings')}
-        >
-          <div className="medallion-inner">
-            <span className="medallion-gear" aria-hidden="true">
-              <Sliders className="w-5 h-5 text-gold" />
-            </span>
-            <div className="medallion-text">
-              <strong className="medallion-title">{t('Admin settings')}</strong>
+            <div className="event-card-copy">
+              <div className="event-card-title">
+                <h2>{TIMER_GAME_NAME}</h2>
+                <ArrowRight className="card-arrow" aria-hidden="true" />
+              </div>
+              <p className="card-description">
+                {t('The challenge: Participants must stop a running timer as close as possible to')} {target.toFixed(2)} {t('seconds to win a prize.')}
+              </p>
+              <span className="event-card-action">{t('Select game')} <ArrowRight aria-hidden="true" /></span>
             </div>
-            <span className="medallion-flourish" aria-hidden="true">⚜️</span>
-          </div>
-        </button>
+          </button>
+
+          <button
+            type="button"
+            className="event-game-card"
+            onClick={() => selectGame('picture-match')}
+          >
+            <div className="event-card-tags">
+              <span className="game-num">{t('CHALLENGE')} 02</span>
+              <span className="game-type-badge">
+                <Wine className="w-3.5 h-3.5" aria-hidden="true" />
+                {t('Picture match')}
+              </span>
+            </div>
+
+            <div className="event-card-media event-card-picture">
+              <img
+                src="/images/vintage-game-scene.jpg"
+                alt="Vintage vineyard estate picture match scene"
+              />
+            </div>
+
+            <div className="event-card-copy">
+              <div className="event-card-title">
+                <h2>Vintage Picture Match</h2>
+                <ArrowRight className="card-arrow" aria-hidden="true" />
+              </div>
+              <p className="card-description">
+                {t('Match the glass to its outline.')}
+              </p>
+              <span className="event-card-action">{t('Select game')} <ArrowRight aria-hidden="true" /></span>
+            </div>
+          </button>
+        </div>
+
+        <footer className="event-entry-footer">
+          <button
+            type="button"
+            className="event-link-button"
+            onClick={() => navigate('/settings')}
+          >
+            <Sliders aria-hidden="true" />{t('Admin settings')}
+          </button>
+        </footer>
       </div>
-    </Screen>
+    </main>
   );
 }

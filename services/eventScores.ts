@@ -9,12 +9,12 @@ interface Entry {
 }
 
 export type EventScore = Entry & (
-  { mode: 'picture-match'; percentage: number; score?: number }
+  { mode: 'picture-match'; percentage: number; matches?: number; score?: number }
   | ({ mode: 'target-timer' } & TimerResult)
 );
 
 export type NewEventScore =
-  { mode: 'picture-match'; percentage: number; score?: number }
+  { mode: 'picture-match'; percentage: number; matches?: number }
   | ({ mode: 'target-timer' } & TimerResult);
 
 export const EVENT_SCORES_KEY = 'ppm_event_results_v2';
@@ -28,6 +28,7 @@ export function isEventScore(value: unknown): value is EventScore {
   if (entry.mode === 'picture-match') {
     return typeof entry.percentage === 'number' && Number.isFinite(entry.percentage)
       && entry.percentage >= 0 && entry.percentage <= 100
+      && (entry.matches === undefined || (typeof entry.matches === 'number' && Number.isInteger(entry.matches) && entry.matches >= 0))
       && (entry.score === undefined || (typeof entry.score === 'number' && Number.isFinite(entry.score) && entry.score >= 0));
   }
   return entry.mode === 'target-timer'
@@ -38,20 +39,28 @@ export function isEventScore(value: unknown): value is EventScore {
 
 export function rankScores(entries: EventScore[], mode: GameMode): EventScore[] {
   return entries.filter((entry) => entry.mode === mode).sort((a, b) => {
+    if (mode === 'picture-match' && a.mode === 'picture-match' && b.mode === 'picture-match') {
+      if (a.matches !== undefined && b.matches === undefined) return -1;
+      if (a.matches === undefined && b.matches !== undefined) return 1;
+      if (a.matches !== undefined && b.matches !== undefined && a.matches !== b.matches) {
+        return b.matches - a.matches;
+      }
+      return b.percentage - a.percentage || a.createdAt - b.createdAt || a.id.localeCompare(b.id);
+    }
     const first = a.mode === 'picture-match'
-      ? -((a.score !== undefined && a.score > 0) ? a.score : a.percentage)
+      ? -((a.matches !== undefined) ? a.matches : a.percentage)
       : Math.abs(hundredths(a.elapsed) - hundredths(a.target));
     const second = b.mode === 'picture-match'
-      ? -((b.score !== undefined && b.score > 0) ? b.score : b.percentage)
+      ? -((b.matches !== undefined) ? b.matches : b.percentage)
       : Math.abs(hundredths(b.elapsed) - hundredths(b.target));
     return first - second || a.createdAt - b.createdAt || a.id.localeCompare(b.id);
   });
 }
 
-export function formatEventScore(entry: NewEventScore): string {
+export function formatEventScore(entry: NewEventScore, t: (text: string) => string = (text) => text): string {
   if (entry.mode === 'picture-match') {
-    if ('score' in entry && typeof entry.score === 'number' && entry.score > 0) {
-      return `${entry.score} pts (${entry.percentage}%)`;
+    if ('matches' in entry && typeof entry.matches === 'number') {
+      return `${entry.matches} ${t(entry.matches === 1 ? 'match' : 'matches')}`;
     }
     return `${entry.percentage}%`;
   }

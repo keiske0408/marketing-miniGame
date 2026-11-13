@@ -1,4 +1,17 @@
 import type { UserSettings } from '../types';
+import crystalClickSfx from '../assets/audio/light-chime-of-crystal.mp3';
+import winePourSfx from '../assets/audio/bottle-of-wine-wine-is-poured-into-a-glass.mp3';
+import timerWinSfx from '../assets/audio/floraphonic-90s-game-ui-6-185099.mp3';
+import timerMissSfx from '../assets/audio/universfield-video-game-bonus-323603.mp3';
+
+type SfxSampleKey = 'click' | 'pour' | 'timerWin' | 'timerMiss';
+
+const SFX_SAMPLE_URLS: Record<SfxSampleKey, string> = {
+  click: crystalClickSfx,
+  pour: winePourSfx,
+  timerWin: timerWinSfx,
+  timerMiss: timerMissSfx,
+};
 
 class SoundManager {
   private ctx: AudioContext | null = null;
@@ -12,11 +25,16 @@ class SoundManager {
   private musicWanted = false;
   private isDucked = false;
   private lastClickSoundAt = 0;
+  private sfxRawCache = new Map<SfxSampleKey, Promise<ArrayBuffer | null>>();
+  private sfxBufferCache = new Map<SfxSampleKey, AudioBuffer>();
+  private sfxDecodePromises = new Map<SfxSampleKey, Promise<AudioBuffer | null>>();
+  private pouringRequested = false;
   private activePour: {
-    sources: AudioBufferSourceNode[];
-    oscillators: OscillatorNode[];
-    masterGain: GainNode;
+    source: AudioBufferSourceNode;
+    gain: GainNode;
+    stopTimer?: ReturnType<typeof setTimeout>;
   } | null = null;
+  private fallbackPourAudio: HTMLAudioElement | null = null;
 
   private settings: UserSettings = {
     masterVolume: 80,
@@ -50,7 +68,66 @@ class SoundManager {
           }
         }
       });
+
+      this.preloadRawSamples();
     }
+  }
+
+  private preloadRawSamples() {
+    if (typeof fetch === 'undefined') return;
+    (Object.keys(SFX_SAMPLE_URLS) as SfxSampleKey[]).forEach((key) => {
+      void this.fetchRawSample(key);
+    });
+  }
+
+  private fetchRawSample(key: SfxSampleKey): Promise<ArrayBuffer | null> {
+    const existing = this.sfxRawCache.get(key);
+    if (existing) return existing;
+    if (typeof fetch === 'undefined') return Promise.resolve(null);
+
+    const request = fetch(SFX_SAMPLE_URLS[key])
+      .then((response) => {
+        if (!response.ok) throw new Error(`Failed to fetch audio sample: ${key}`);
+        return response.arrayBuffer();
+      })
+      .catch((error) => {
+        console.warn(`Audio sample preload failed (${key}):`, error);
+        return null;
+      });
+    this.sfxRawCache.set(key, request);
+    return request;
+  }
+
+  private loadSampleBuffer(key: SfxSampleKey, ctx: AudioContext): Promise<AudioBuffer | null> {
+    const cached = this.sfxBufferCache.get(key);
+    if (cached) return Promise.resolve(cached);
+
+    const pending = this.sfxDecodePromises.get(key);
+    if (pending) return pending;
+
+    const task = this.fetchRawSample(key)
+      .then(async (raw) => {
+        if (!raw) return null;
+        const decoded = await ctx.decodeAudioData(raw.slice(0));
+        this.sfxBufferCache.set(key, decoded);
+        return decoded;
+      })
+      .catch((error) => {
+        console.warn(`Audio sample decode failed (${key}):`, error);
+        return null;
+      })
+      .finally(() => {
+        this.sfxDecodePromises.delete(key);
+      });
+
+    this.sfxDecodePromises.set(key, task);
+    return task;
+  }
+
+  private decodeAllSamples(ctx: AudioContext) {
+    (Object.keys(SFX_SAMPLE_URLS) as SfxSampleKey[]).forEach((key) => {
+      void this.loadSampleBuffer(key, ctx);
+    });
   }
 
   /**
@@ -89,6 +166,7 @@ class SoundManager {
         this.musicGain.connect(compressor);
 
         this.applyVolumes();
+        this.decodeAllSamples(this.ctx);
       } catch (err) {
         console.warn('Web Audio initialization error:', err);
         return null;
@@ -173,301 +251,162 @@ class SoundManager {
   // SOUND EFFECTS
   // ==============================================================================
 
-  /**
-   * Generates a calibrated pink noise buffer using Paul Kellet's 7-pole filter
-   * Gives natural 1/f spectral rolloff essential for authentic fluid dynamics
-   */
-  private getPinkNoiseBuffer(ctx: AudioContext, durationSec = 3.5): AudioBuffer {
-    const sampleRate = ctx.sampleRate;
-    const bufferSize = Math.floor(sampleRate * durationSec);
-    const buffer = ctx.createBuffer(1, bufferSize, sampleRate);
-    const data = buffer.getChannelData(0);
-
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      b0 = 0.99886 * b0 + white * 0.0555179;
-      b1 = 0.99332 * b1 + white * 0.0750759;
-      b2 = 0.96900 * b2 + white * 0.1538520;
-      b3 = 0.86650 * b3 + white * 0.3104856;
-      b4 = 0.55000 * b4 + white * 0.5329522;
-      b5 = -0.7616 * b5 - white * 0.0168980;
-      data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.15;
-      b6 = white * 0.115926;
+  private playFallbackElement(key: SfxSampleKey, gainScale: number, loop = false): HTMLAudioElement | null {
+    if (typeof Audio === 'undefined') return null;
+    try {
+      const audio = new Audio(SFX_SAMPLE_URLS[key]);
+      audio.loop = loop;
+      const master = this.settings.muted ? 0 : Math.max(0, Math.min(1, this.settings.masterVolume / 100));
+      const sfx = Math.max(0, Math.min(1, this.settings.sfxVolume / 100));
+      audio.volume = Math.max(0, Math.min(1, master * sfx * gainScale));
+      void audio.play().catch(() => {});
+      return audio;
+    } catch {
+      return null;
     }
-    return buffer;
+  }
+
+  private playSample(key: SfxSampleKey, gainScale = 1) {
+    if (this.settings.muted || this.settings.sfxVolume <= 0) return;
+    const ctx = this.ensureContext();
+    if (!ctx || !this.sfxGain) {
+      this.playFallbackElement(key, gainScale);
+      return;
+    }
+
+    const buffer = this.sfxBufferCache.get(key);
+    if (!buffer) {
+      void this.loadSampleBuffer(key, ctx);
+      this.playFallbackElement(key, gainScale);
+      return;
+    }
+
+    try {
+      const source = ctx.createBufferSource();
+      const gain = ctx.createGain();
+      source.buffer = buffer;
+      gain.gain.setValueAtTime(gainScale, ctx.currentTime);
+      source.connect(gain);
+      gain.connect(this.sfxGain);
+      source.addEventListener('ended', () => {
+        try {
+          source.disconnect();
+          gain.disconnect();
+        } catch {}
+      }, { once: true });
+      source.start();
+    } catch {
+      this.playFallbackElement(key, gainScale);
+    }
   }
 
   /**
-   * Tactile vintage mechanical brass & wooden latch stop click
-   * Multi-layered physical transient: crisp tactile snap + warm oak thump + metallic latch ping
+   * Crystal chime button click sound (assets/audio/light-chime-of-crystal.mp3)
    */
   public playClick() {
     if (this.settings.muted || this.settings.sfxVolume <= 0) return;
     const now = performance.now();
     if (now - this.lastClickSoundAt < 50) return;
     this.lastClickSoundAt = now;
-    const ctx = this.ensureContext();
-    if (!ctx || !this.sfxGain) return;
-
-    try {
-      const t = ctx.currentTime;
-
-      // Layer 1: Crisp tactile mechanical snap (bandpass transient impulse)
-      const snapOsc = ctx.createOscillator();
-      const snapGain = ctx.createGain();
-      const snapFilter = ctx.createBiquadFilter();
-
-      snapFilter.type = 'bandpass';
-      snapFilter.frequency.setValueAtTime(1850, t);
-      snapFilter.Q.setValueAtTime(1.4, t);
-
-      snapOsc.type = 'triangle';
-      snapOsc.frequency.setValueAtTime(2600, t);
-      snapOsc.frequency.exponentialRampToValueAtTime(540, t + 0.03);
-
-      snapGain.gain.setValueAtTime(0.0001, t);
-      snapGain.gain.linearRampToValueAtTime(0.68, t + 0.002);
-      snapGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.032);
-
-      snapOsc.connect(snapFilter);
-      snapFilter.connect(snapGain);
-      snapGain.connect(this.sfxGain);
-
-      snapOsc.start(t);
-      snapOsc.stop(t + 0.035);
-
-      // Layer 2: Warm vintage oak / brass chassis thump (acoustic presence)
-      const thumpOsc = ctx.createOscillator();
-      const thumpGain = ctx.createGain();
-
-      thumpOsc.type = 'sine';
-      thumpOsc.frequency.setValueAtTime(420, t);
-      thumpOsc.frequency.exponentialRampToValueAtTime(140, t + 0.05);
-
-      thumpGain.gain.setValueAtTime(0.0001, t);
-      thumpGain.gain.linearRampToValueAtTime(0.46, t + 0.003);
-      thumpGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.055);
-
-      thumpOsc.connect(thumpGain);
-      thumpGain.connect(this.sfxGain);
-
-      thumpOsc.start(t);
-      thumpOsc.stop(t + 0.06);
-
-      // Layer 3: Delicate high metallic latch accent (audible on small speakers & kiosks)
-      const metalOsc = ctx.createOscillator();
-      const metalGain = ctx.createGain();
-      metalOsc.type = 'sine';
-      metalOsc.frequency.setValueAtTime(3200, t);
-      metalOsc.frequency.exponentialRampToValueAtTime(1800, t + 0.02);
-
-      metalGain.gain.setValueAtTime(0.0001, t);
-      metalGain.gain.linearRampToValueAtTime(0.24, t + 0.001);
-      metalGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.022);
-
-      metalOsc.connect(metalGain);
-      metalGain.connect(this.sfxGain);
-
-      metalOsc.start(t);
-      metalOsc.stop(t + 0.025);
-    } catch {
-      // Guard
-    }
+    this.playSample('click', 0.9);
   }
 
-  /**
-   * Sommelier-grade Physical Acoustic Model of Vintage Wine Pouring
-   * - Pink-noise fluid turbulence (velvety liquid stream)
-   * - Bottle neck pressure glug LFO modulation (~4.2Hz surging rhythm)
-   * - Minnaert aeration & effervescent micro-bubble bursts
-   * - Rising cavity formant filter (simulating liquid filling the crystal glass)
-   */
-  public startPouring(expectedDuration = 23) {
-    if (this.settings.muted || this.settings.sfxVolume <= 0 || this.activePour) return;
-    const ctx = this.ensureContext();
-    if (!ctx || !this.sfxGain) return;
-
+  private startPourSource(ctx: AudioContext, buffer: AudioBuffer) {
+    if (!this.sfxGain || this.activePour || !this.pouringRequested) return;
     try {
       const t = ctx.currentTime;
-      const masterPourGain = ctx.createGain();
-      masterPourGain.gain.setValueAtTime(0.0001, t);
-      masterPourGain.gain.linearRampToValueAtTime(0.48, t + 0.16);
+      const source = ctx.createBufferSource();
+      const gain = ctx.createGain();
+      source.buffer = buffer;
+      source.loop = true;
 
-      // --- Layer 1: Velvety Fluid Stream & Glass Cavity Resonance ---
-      const streamBuffer = this.getPinkNoiseBuffer(ctx, 3.5);
-      const streamSource = ctx.createBufferSource();
-      streamSource.buffer = streamBuffer;
-      streamSource.loop = true;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.linearRampToValueAtTime(0.85, t + 0.12);
 
-      const cavityFilter = ctx.createBiquadFilter();
-      cavityFilter.type = 'bandpass';
-      cavityFilter.frequency.setValueAtTime(560, t);
-      // As wine fills the glass, air column shortens and resonant pitch rises
-      cavityFilter.frequency.exponentialRampToValueAtTime(940, t + Math.max(6, expectedDuration));
-      cavityFilter.Q.setValueAtTime(1.6, t);
+      source.connect(gain);
+      gain.connect(this.sfxGain);
+      source.start(t);
 
-      const streamGain = ctx.createGain();
-      streamGain.gain.setValueAtTime(0.85, t);
-
-      streamSource.connect(cavityFilter);
-      cavityFilter.connect(streamGain);
-      streamGain.connect(masterPourGain);
-
-      // --- Layer 2: Bottle Neck Liquid Glug & Surge (4.2Hz Surge Rhythm) ---
-      const glugLfo = ctx.createOscillator();
-      glugLfo.type = 'sine';
-      glugLfo.frequency.setValueAtTime(4.2, t);
-
-      const glugFreqMod = ctx.createGain();
-      glugFreqMod.gain.setValueAtTime(140, t);
-      glugLfo.connect(glugFreqMod);
-      glugFreqMod.connect(cavityFilter.frequency);
-
-      const glugAmpMod = ctx.createGain();
-      glugAmpMod.gain.setValueAtTime(0.18, t);
-      glugLfo.connect(glugAmpMod);
-      glugAmpMod.connect(streamGain.gain);
-
-      // --- Layer 3: Aeration & Effervescent Micro-Bubbles (Minnaert Resonators) ---
-      const bubbleBuffer = this.getPinkNoiseBuffer(ctx, 2.5);
-      const bubbleSource = ctx.createBufferSource();
-      bubbleSource.buffer = bubbleBuffer;
-      bubbleSource.loop = true;
-
-      const bubbleFilter = ctx.createBiquadFilter();
-      bubbleFilter.type = 'bandpass';
-      bubbleFilter.frequency.setValueAtTime(1750, t);
-      bubbleFilter.Q.setValueAtTime(3.6, t);
-
-      const bubbleGain = ctx.createGain();
-      bubbleGain.gain.setValueAtTime(0.38, t);
-
-      const bubbleLfo = ctx.createOscillator();
-      bubbleLfo.type = 'triangle';
-      bubbleLfo.frequency.setValueAtTime(6.9, t);
-
-      const bubbleLfoMod = ctx.createGain();
-      bubbleLfoMod.gain.setValueAtTime(0.18, t);
-      bubbleLfo.connect(bubbleLfoMod);
-      bubbleLfoMod.connect(bubbleGain.gain);
-
-      bubbleSource.connect(bubbleFilter);
-      bubbleFilter.connect(bubbleGain);
-      bubbleGain.connect(masterPourGain);
-
-      // --- Layer 4: Crystal Stemware Body Shimmer ---
-      const crystalPeaking = ctx.createBiquadFilter();
-      crystalPeaking.type = 'peaking';
-      crystalPeaking.frequency.setValueAtTime(2480, t);
-      crystalPeaking.Q.setValueAtTime(4.0, t);
-      crystalPeaking.gain.setValueAtTime(3.5, t);
-
-      masterPourGain.connect(crystalPeaking);
-      crystalPeaking.connect(this.sfxGain);
-
-      streamSource.start(t);
-      bubbleSource.start(t);
-      glugLfo.start(t);
-      bubbleLfo.start(t);
-
-      this.activePour = {
-        sources: [streamSource, bubbleSource],
-        oscillators: [glugLfo, bubbleLfo],
-        masterGain: masterPourGain,
-      };
+      this.activePour = { source, gain };
     } catch (error) {
       console.warn('Wine pouring sound could not be started:', error);
     }
   }
 
   /**
-   * Graceful deceleration and settling droplet pop when pouring stops
+   * Looped wine pouring asset (assets/audio/bottle-of-wine-wine-is-poured-into-a-glass.mp3)
    */
+  public startPouring() {
+    if (this.settings.muted || this.settings.sfxVolume <= 0) return;
+    if (this.pouringRequested || this.activePour) return;
+    this.pouringRequested = true;
+
+    const ctx = this.ensureContext();
+    if (!ctx || !this.sfxGain) {
+      this.fallbackPourAudio = this.playFallbackElement('pour', 0.85, true);
+      return;
+    }
+
+    const buffer = this.sfxBufferCache.get('pour');
+    if (buffer) {
+      this.startPourSource(ctx, buffer);
+      return;
+    }
+
+    void this.loadSampleBuffer('pour', ctx).then((decoded) => {
+      if (!this.pouringRequested || this.activePour) return;
+      if (decoded && this.ctx && this.sfxGain) {
+        this.startPourSource(this.ctx, decoded);
+      } else {
+        this.fallbackPourAudio = this.playFallbackElement('pour', 0.85, true);
+      }
+    });
+  }
+
   public stopPouring() {
+    this.pouringRequested = false;
+
+    if (this.fallbackPourAudio) {
+      try {
+        this.fallbackPourAudio.pause();
+        this.fallbackPourAudio.currentTime = 0;
+      } catch {}
+      this.fallbackPourAudio = null;
+    }
+
     const pour = this.activePour;
     if (!pour || !this.ctx) return;
 
     this.activePour = null;
-    const ctx = this.ctx;
-    const t = ctx.currentTime;
+    const t = this.ctx.currentTime;
 
     try {
-      pour.masterGain.gain.cancelScheduledValues(t);
-      pour.masterGain.gain.setTargetAtTime(0.0001, t, 0.035);
-
-      // Delicate settling wine droplets hitting the filled glass
-      this.playDropletSettleAt(t + 0.04);
-      this.playDropletSettleAt(t + 0.11, 0.7);
-
-      setTimeout(() => {
+      pour.gain.gain.cancelScheduledValues(t);
+      pour.gain.gain.setTargetAtTime(0.0001, t, 0.03);
+      pour.stopTimer = setTimeout(() => {
         try {
-          pour.sources.forEach((s) => {
-            try { s.stop(); s.disconnect(); } catch {}
-          });
-          pour.oscillators.forEach((o) => {
-            try { o.stop(); o.disconnect(); } catch {}
-          });
-          pour.masterGain.disconnect();
+          pour.source.stop();
+          pour.source.disconnect();
+          pour.gain.disconnect();
         } catch {}
-      }, 180);
+      }, 140);
     } catch {
       // Guard
     }
   }
 
   /**
-   * Realistic acoustic liquid droplet settling pop into wine glass
+   * Stop the Clock Challenge win SFX (assets/audio/floraphonic-90s-game-ui-6-185099.mp3)
    */
-  private playDropletSettleAt(time: number, intensity = 1.0) {
-    if (!this.ctx || !this.sfxGain) return;
-    const ctx = this.ctx;
-    const sfxGain = this.sfxGain;
+  public playTimerWin() {
+    this.playSample('timerWin', 0.95);
+  }
 
-    try {
-      // Fluid surface droplet chirp
-      const dropOsc = ctx.createOscillator();
-      const dropGain = ctx.createGain();
-      const dropFilter = ctx.createBiquadFilter();
-
-      dropFilter.type = 'bandpass';
-      dropFilter.frequency.setValueAtTime(980, time);
-      dropFilter.Q.setValueAtTime(2.8, time);
-
-      dropOsc.type = 'sine';
-      dropOsc.frequency.setValueAtTime(1150 * intensity, time);
-      dropOsc.frequency.exponentialRampToValueAtTime(420, time + 0.04);
-
-      dropGain.gain.setValueAtTime(0.0001, time);
-      dropGain.gain.linearRampToValueAtTime(0.32 * intensity, time + 0.002);
-      dropGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.045);
-
-      dropOsc.connect(dropFilter);
-      dropFilter.connect(dropGain);
-      dropGain.connect(sfxGain);
-
-      dropOsc.start(time);
-      dropOsc.stop(time + 0.05);
-
-      // Glass surface ring
-      const ringOsc = ctx.createOscillator();
-      const ringGain = ctx.createGain();
-
-      ringOsc.type = 'sine';
-      ringOsc.frequency.setValueAtTime(2489, time);
-
-      ringGain.gain.setValueAtTime(0.0001, time);
-      ringGain.gain.linearRampToValueAtTime(0.12 * intensity, time + 0.002);
-      ringGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.035);
-
-      ringOsc.connect(ringGain);
-      ringGain.connect(sfxGain);
-
-      ringOsc.start(time);
-      ringOsc.stop(time + 0.04);
-    } catch {
-      // Guard
-    }
+  /**
+   * Stop the Clock Challenge miss / "Thank you" SFX (assets/audio/universfield-video-game-bonus-323603.mp3)
+   */
+  public playTimerMiss() {
+    this.playSample('timerMiss', 0.95);
   }
 
   /**

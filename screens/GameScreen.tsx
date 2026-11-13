@@ -20,6 +20,8 @@ export function GameScreen() {
   const { scores, save, error } = useEventScores();
   const [currentScore, setCurrentScore] = useState<NewEventScore | null>(null);
   const isPictureMatch = mode === 'picture-match';
+  const isMultiMatch = isPictureMatch && settings.pictureMatchMode !== 'single';
+  const showLeaderboard = settings.showLeaderboard !== false;
   const rules = timerRules(settings);
 
   if (!player) return <Navigate to="/player" replace />;
@@ -35,51 +37,63 @@ export function GameScreen() {
   };
   const standings = rankScores(scores, mode).slice(0, 8);
   const scoreList = error ? <p role="alert" className="kiosk-empty">{error}</p> : standings.length === 0 ? <p className="kiosk-empty">{t('The top spot is waiting for you.')}</p> :
-    <ol>{standings.map((entry, index) => <li key={entry.id}><span className="kiosk-rank">{String(index + 1).padStart(2, '0')}</span><strong>{entry.name}</strong><span>{formatEventScore(entry)}</span></li>)}</ol>;
+    <ol>{standings.map((entry, index) => <li key={entry.id}><span className="kiosk-rank">{String(index + 1).padStart(2, '0')}</span><strong>{entry.name}</strong><span>{formatEventScore(entry, t)}</span></li>)}</ol>;
+  const navigation = (
+    <header className={isPictureMatch ? 'kiosk-play-header' : 'event-support-nav'}>
+      <button type="button" className={isPictureMatch ? 'kiosk-nav-button' : 'event-link-button'} onClick={() => navigate('/game')}><ArrowLeft aria-hidden="true" />{!isPictureMatch && <Gamepad2 aria-hidden="true" />}{t('Game menu')}</button>
+      {isPictureMatch && <strong className="picture-player-name">{player.name}</strong>}
+      <button type="button" className={isPictureMatch ? 'kiosk-new-player' : 'event-button stop-clock-next-player'} onClick={newPlayer}><UserRoundPlus aria-hidden="true" /><span><strong>{t('Next player')}</strong><small>{t('Register & play')}</small></span></button>
+    </header>
+  );
 
   return (
-    <main className={`kiosk-play ${isPictureMatch ? 'picture-play' : ''}`}>
-      <header className="kiosk-play-header">
-        <button type="button" className="kiosk-nav-button" onClick={() => navigate('/game')}><ArrowLeft aria-hidden="true" />{!isPictureMatch && <Gamepad2 aria-hidden="true" />}{t('Game menu')}</button>
-        {isPictureMatch && <strong className="picture-player-name">{player.name}</strong>}
-        <button type="button" className="kiosk-new-player" onClick={newPlayer}><UserRoundPlus aria-hidden="true" /><span><strong>{t('Next player')}</strong><small>{t('Register & play')}</small></span></button>
-      </header>
-      <div className="kiosk-play-title">
+    <main className={isPictureMatch ? 'kiosk-play picture-play' : 'event-theme stop-clock-play'}>
+      {isPictureMatch && navigation}
+      {isPictureMatch && <div className="kiosk-play-title">
         <div>
-          <span>{isPictureMatch ? 'CHÂTEAU VINTAGE' : 'CHÂTEAU VINTAGE / GAME LOUNGE'}</span>
-          <h1>{isPictureMatch ? t('Picture match') : 'THE PERFECT 23'}</h1>
+          <span>CHÂTEAU VINTAGE</span>
+          <h1>{t('Picture match')}</h1>
         </div>
         <div className="kiosk-current-score">
-          <span>{t(isPictureMatch ? 'Last score' : 'Last time')}</span>
-          <strong>{currentScore ? formatEventScore(currentScore) : '—'}</strong>
+          <span>{t(isPictureMatch ? 'Last result' : 'Last time')}</span>
+          <strong>{currentScore ? formatEventScore(currentScore, t) : '—'}</strong>
         </div>
-      </div>
-      <div className="kiosk-play-grid">
-        <div className="kiosk-play-stage">
+      </div>}
+      <div className={isPictureMatch ? `kiosk-play-grid${showLeaderboard ? '' : ' is-without-leaderboard'}` : 'stop-clock-layout'}>
+        <div className={isPictureMatch ? 'kiosk-play-stage' : 'stop-clock-stage'}>
           {mode === 'target-timer' ? (
             <TargetTimerGame
+              key={player.id}
               {...rules}
               playerName={player.name}
+              instructionsSeen={player.timerInstructionsSeen}
+              onInstructionsRead={() => setKioskPlayer({ ...player, timerInstructionsSeen: true })}
               onResult={(result) => saveScore({ mode: 'target-timer', ...result })}
               onNewPlayer={newPlayer}
               onExit={() => navigate('/game')}
             />
           ) : (
             <VintageWineMatch
-              onGameOver={(score, percentage) => saveScore({ mode: 'picture-match', percentage, score })}
+              onGameOver={(matches, percentage) => saveScore({
+                mode: 'picture-match',
+                percentage,
+                ...(settings.pictureMatchMode === 'single' ? {} : { matches }),
+              })}
               onExit={() => navigate('/game')}
               onNewPlayer={newPlayer}
             />
           )}
         </div>
-        <aside id="game-leaderboard" className="kiosk-leaderboard" aria-label={t('Leaderboard')}>
+        {!isPictureMatch && navigation}
+        {!isPictureMatch && <p className="stop-clock-last-time">{t('Last time')}: <strong>{currentScore ? formatEventScore(currentScore, t) : '—'}</strong></p>}
+        {showLeaderboard && <aside id="game-leaderboard" className={`kiosk-leaderboard${isPictureMatch ? '' : ' stop-clock-leaderboard'}`} aria-label={t('Leaderboard')}>
           <div className="kiosk-leaderboard-heading"><Trophy aria-hidden="true" /><div><span>{t('This device')}</span><h2>{t('Leaderboard')}</h2></div><span>{t('Top 8')}</span></div>
-          <p className="leaderboard-rule">{t(isPictureMatch ? 'Highest match percentage first' : 'Closest to each round’s target first')}</p>
+          <p className="leaderboard-rule">{t(isPictureMatch ? isMultiMatch ? 'Most matches first' : 'Highest match percentage first' : 'Closest to each round’s target first')}</p>
           {scoreList}
           <button type="button" className="text-link-btn leaderboard-view-all" onClick={() => navigate('/leaderboard')}>{t('View leaderboard')}</button>
-        </aside>
+        </aside>}
       </div>
-      {!isPictureMatch && <footer className="kiosk-play-footer"><span>{t('One attempt per round')}</span></footer>}
+      {!isPictureMatch && <footer className="stop-clock-footer"><span>{t('One attempt per round')}</span></footer>}
     </main>
   );
 }

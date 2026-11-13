@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
-import { Screen } from '../components/Screen';
+import { ArrowLeft } from 'lucide-react';
+import { EventBrand } from '../components/EventBrand';
 import { Modal } from '../components/Modal';
 import { useGameStore } from '../store/gameStore';
 import { useTranslation } from '../services/i18n';
+import { TIMER_GAME_NAME } from '../config/constants';
+import letsPlay from '../assets/wine_game_UI/SCREEN 1/LETS PLAY.png';
 
 export function PlayerConsentScreen() {
   const navigate = useNavigate();
   const t = useTranslation();
   const settings = useGameStore((state) => state.settings);
+  const mode = useGameStore((state) => state.selectedGameMode);
   const setKioskPlayer = useGameStore((state) => state.setKioskPlayer);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -36,101 +39,100 @@ export function PlayerConsentScreen() {
   };
 
   return (
-    <Screen
-      title={t('Player registration')}
-      showBack
-      backTo="/game"
-      className="kiosk-consent"
-      maxWidth="680px"
-    >
-      <form className="simple-registration" onSubmit={submit}>
-        <div className="consent-inputs-grid">
-          <div className="form-group vintage-form-group">
-            <label htmlFor="player-name" className="form-label vintage-label">
-              <span>{t('Full Name')}</span>
-              {settings.requirePlayerName && <small>{t('Required')}</small>}
-            </label>
-            <input
-              id="player-name"
-              className="form-input vintage-input"
-              placeholder={t('Enter your full name')}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              required={settings.requirePlayerName}
-              maxLength={25}
-              autoComplete="name"
-            />
+    <div className="event-theme event-page">
+      <main className="event-scene event-registration">
+        <EventBrand registration />
+        <h1 className="event-registration-heading">{mode === 'target-timer' ? TIMER_GAME_NAME : 'Vintage Picture Match'}</h1>
+        <form className="event-registration-form" onSubmit={submit} aria-label={t('Player registration')}>
+          <div className="event-registration-fields">
+            <div>
+              <label htmlFor="player-name" className="event-sr-only">
+                <span>{t('Full Name')}</span>
+                {settings.requirePlayerName && <small>{t('Required')}</small>}
+              </label>
+              <input
+                id="player-name"
+                className="event-input"
+                placeholder={t('Full Name')}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                required={settings.requirePlayerName}
+                maxLength={25}
+                autoComplete="name"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="player-email" className="event-sr-only">
+                <span>{t('Email Address')}</span>
+                {settings.requirePlayerEmail && <small>{t('Required')}</small>}
+              </label>
+              <input
+                id="player-email"
+                type="email"
+                className="event-input"
+                placeholder={t('Email Address')}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required={settings.requirePlayerEmail}
+                maxLength={254}
+                autoComplete="email"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="player-phone" className="event-sr-only">
+                <span>{t('Mobile Number')}</span>
+                {settings.requirePlayerPhone && <small>{t('Required')}</small>}
+              </label>
+              <input
+                id="player-phone"
+                type="tel"
+                className="event-input"
+                placeholder={t('Mobile Number')}
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                required={settings.requirePlayerPhone}
+                maxLength={30}
+                autoComplete="tel"
+              />
+            </div>
           </div>
 
-          <div className="form-group vintage-form-group">
-            <label htmlFor="player-email" className="form-label vintage-label">
-              <span>{t('Email Address')}</span>
-              {settings.requirePlayerEmail && <small>{t('Required')}</small>}
+          <div className="event-consent">
+            <label>
+              <input
+                type="checkbox"
+                required
+                checked={agreed}
+                onChange={(event) => setAgreed(event.target.checked)}
+              />
+              <span>
+                {t('I acknowledge the Data Privacy Notice')}
+              </span>
             </label>
-            <input
-              id="player-email"
-              type="email"
-              className="form-input vintage-input"
-              placeholder={t('Enter your email address')}
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required={settings.requirePlayerEmail}
-              maxLength={254}
-              autoComplete="email"
-            />
+            <button type="button" className="event-privacy-link" aria-haspopup="dialog" onClick={() => setShowPrivacy(true)}>{t('View more details')}</button>
           </div>
 
-          <div className="form-group vintage-form-group">
-            <label htmlFor="player-phone" className="form-label vintage-label">
-              <span>{t('Contact Number')}</span>
-              {settings.requirePlayerPhone && <small>{t('Required')}</small>}
-            </label>
-            <input
-              id="player-phone"
-              type="tel"
-              className="form-input vintage-input"
-              placeholder={t('Enter your contact number')}
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              required={settings.requirePlayerPhone}
-              maxLength={30}
-              autoComplete="tel"
-            />
-          </div>
-        </div>
-
-        <div className="simple-consent">
-          <label>
-            <input
-              type="checkbox"
-              className="vintage-custom-check"
-              required
-              checked={agreed}
-              onChange={(event) => setAgreed(event.target.checked)}
-            />
-            <span className="checkbox-text">
-              {t('I have read and agree to the Privacy Notice.')}
-            </span>
-          </label>
-          <button type="button" className="privacy-details-link" aria-haspopup="dialog" onClick={() => setShowPrivacy(true)}>{t('View more details')}</button>
-        </div>
-
-        {/* Primary Action Button */}
-        <button
-          type="submit"
-          className="btn registration-submit"
-          disabled={!agreed}
-        >
-          <span>{t('Agree & play')}</span>
-          <ArrowRight className="w-5 h-5 ml-2" aria-hidden="true" />
-        </button>
-      </form>
-      <Modal title={t('Privacy Notice')} isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} maxWidth="640px">
+          <button
+            type="submit"
+            className="event-button event-art-button event-registration-submit"
+            disabled={!agreed}
+          >
+            {settings.language === 'en' && <img src={letsPlay} alt="" />}
+            <span className={settings.language === 'en' ? 'event-sr-only' : undefined}>{t("Let's play")}</span>
+          </button>
+        </form>
+      </main>
+      <nav className="event-support-nav" aria-label={t('Game navigation')}>
+        <button type="button" className="event-link-button" onClick={() => navigate('/game')}><ArrowLeft aria-hidden="true" />{t('Back')}</button>
+      </nav>
+      <Modal title={t('Privacy Notice')} isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} maxWidth="640px" className="event-dialog event-privacy-dialog" overlayClassName="event-modal-overlay">
         <p>{t('Global Visions Holdings Inc. (GVI) collects your name, email address, and contact number for game registration, participant identification, game administration, and game-related communications.')}</p>
         <p>{t('Only authorized personnel may access your registration details. Personal information must be protected and retained only as long as needed for these purposes, in accordance with the Data Privacy Act of 2012 (RA 10173).')}</p>
         <p>{t('Your registration details stay on this device during your session. Your name and score appear on this device\'s leaderboard and remain in its browser storage.')}</p>
         <p>{t('By agreeing, you consent to the processing of your information for these purposes.')}</p>
       </Modal>
-    </Screen>
+    </div>
   );
 }

@@ -5,10 +5,11 @@ import { Tabs } from '../components/Tabs';
 import { Avatar } from '../components/Avatar';
 import { useGameStore } from '../store/gameStore';
 import { useTranslation } from '../services/i18n';
-import { rankScores } from '../services/eventScores';
+import { formatEventScore, rankScores } from '../services/eventScores';
 import { useEventScores } from '../services/useEventScores';
 import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
+import { TIMER_GAME_NAME } from '../config/constants';
 
 export function LeaderboardScreen() {
   const t = useTranslation();
@@ -29,8 +30,8 @@ export function LeaderboardScreen() {
       const pictures = rankScores(scores, 'picture-match');
       const timers = rankScores(scores, 'target-timer');
       return [...pictures, ...timers].sort((a, b) => {
-        const scoreA = a.mode === 'picture-match' ? (a.score ?? a.percentage) : Math.max(0, 100 - Math.abs(a.elapsed - a.target) * 20);
-        const scoreB = b.mode === 'picture-match' ? (b.score ?? b.percentage) : Math.max(0, 100 - Math.abs(b.elapsed - b.target) * 20);
+        const scoreA = a.mode === 'picture-match' ? (a.matches ?? a.percentage) : Math.max(0, 100 - Math.abs(a.elapsed - a.target) * 20);
+        const scoreB = b.mode === 'picture-match' ? (b.matches ?? b.percentage) : Math.max(0, 100 - Math.abs(b.elapsed - b.target) * 20);
         return scoreB - scoreA || a.createdAt - b.createdAt;
       });
     }
@@ -44,17 +45,19 @@ export function LeaderboardScreen() {
     if (playerScores.length === 0) return null;
     const bestPicture = playerScores
       .filter((s) => s.mode === 'picture-match')
-      .sort((a, b) => ((b.score ?? b.percentage) - (a.score ?? a.percentage)))[0];
+      .sort((a, b) => ((b.matches ?? b.percentage) - (a.matches ?? a.percentage)))[0];
     const bestTimer = playerScores
       .filter((s) => s.mode === 'target-timer')
       .sort((a, b) => Math.abs(a.elapsed - a.target) - Math.abs(b.elapsed - b.target))[0];
 
     return {
       name: activeName,
-      bestPicture: bestPicture ? (bestPicture.score ?? bestPicture.percentage) : null,
+      bestPicture: bestPicture
+        ? bestPicture.matches === undefined ? `${bestPicture.percentage}%` : `${bestPicture.matches} ${t(bestPicture.matches === 1 ? 'match' : 'matches')}`
+        : null,
       bestTimer: bestTimer ? `${bestTimer.elapsed.toFixed(2)}s` : null,
     };
-  }, [scores, activeName]);
+  }, [scores, activeName, t]);
 
   const getRankBadge = (rank: number) => {
     if (rank === 1) return '🥇';
@@ -86,7 +89,7 @@ export function LeaderboardScreen() {
         tabs={[
           { id: 'all', label: t('ALL CHALLENGES') },
           { id: 'picture-match', label: `🖼️ ${t('PICTURE MATCH')}` },
-          { id: 'target-timer', label: `⏱️ ${t('THE PERFECT 23')}` },
+          { id: 'target-timer', label: `⏱️ ${TIMER_GAME_NAME}` },
         ]}
         activeTab={tab}
         onChange={(id) => setTab(id as 'all' | 'picture-match' | 'target-timer')}
@@ -103,7 +106,7 @@ export function LeaderboardScreen() {
               <span className="rank-player-name">{personalBest.name}</span>
               <span className="rank-player-score">
                 {personalBest.bestPicture !== null && (
-                  <span>Best Match: <strong>{personalBest.bestPicture} pts</strong></span>
+                  <span>Best Match: <strong>{personalBest.bestPicture}</strong></span>
                 )}
                 {personalBest.bestTimer !== null && (
                   <span style={{ marginLeft: personalBest.bestPicture !== null ? '12px' : 0 }}>
@@ -122,7 +125,7 @@ export function LeaderboardScreen() {
         <div className="leaderboard-header-row">
           <span className="col-rank">{t('RANK')}</span>
           <span className="col-player">{t('SOMMELIER')}</span>
-          <span className="col-score">{t('SCORE')}</span>
+          <span className="col-score">{t(tab === 'picture-match' ? 'Match result' : 'SCORE')}</span>
           <span className="col-acc">{t('PRECISION')}</span>
         </div>
 
@@ -142,7 +145,7 @@ export function LeaderboardScreen() {
             {entries.map((item, index) => {
               const rank = index + 1;
               const isPicture = item.mode === 'picture-match';
-              const displayScore = isPicture ? (item.score ?? item.percentage) : item.elapsed.toFixed(2);
+              const displayScore = isPicture ? formatEventScore(item, t) : item.elapsed.toFixed(2);
               const displayPrecision = isPicture ? `${item.percentage}%` : `${Math.abs(item.elapsed - item.target).toFixed(2)}s`;
 
               return (

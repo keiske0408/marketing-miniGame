@@ -9,7 +9,7 @@ import { useTranslation } from '../services/i18n';
 import { overlapPercentage } from '../services/eventRules';
 
 interface VintageWineMatchProps {
-  onGameOver?: (score: number, percentage: number) => void;
+  onGameOver?: (matches: number, percentage: number) => void;
   onExit?: () => void;
   onNewPlayer?: () => void;
 }
@@ -19,16 +19,8 @@ type PlayPhase = 'moving' | 'stopping' | 'matched' | 'gameover';
 export function VintageWineMatch({ onGameOver, onExit, onNewPlayer }: VintageWineMatchProps) {
   const t = useTranslation();
   const settings = useGameStore((state) => state.settings);
-  const [score, setScore] = useState(0);
   const [matchCount, setMatchCount] = useState(0);
   const [lastPercentage, setLastPercentage] = useState<number | null>(null);
-  const [bestScore, setBestScore] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('ppm_vintage_match_best');
-      return saved ? parseInt(saved, 10) || 0 : 0;
-    }
-    return 0;
-  });
 
   const [phase, setPhase] = useState<PlayPhase>('moving');
   const [toast, setToast] = useState<string | null>(null);
@@ -58,13 +50,9 @@ export function VintageWineMatch({ onGameOver, onExit, onNewPlayer }: VintageWin
 
   const speedRef = useRef(baseSpeed);
   const phaseRef = useRef<PlayPhase>('moving');
-  const scoreRef = useRef(0);
   const matchCountRef = useRef(0);
-  const bestScoreRef = useRef(bestScore);
 
-  scoreRef.current = score;
   matchCountRef.current = matchCount;
-  bestScoreRef.current = bestScore;
 
   const pickNextTarget = useCallback((prev: number) => {
     const pool = [26.0, 36.0, 46.0, 56.0, 66.0, 76.0].filter((x) => Math.abs(x - prev) >= 14);
@@ -113,25 +101,10 @@ export function VintageWineMatch({ onGameOver, onExit, onNewPlayer }: VintageWin
     // Overlap threshold for a successful match (70% minimum overlap)
     if (percentage >= 70) {
       // SUCCESSFUL MATCH!
-      const isExact = percentage >= 96;
-      const points = 100 + (isExact ? 50 : 0);
-      const newScore = scoreRef.current + points;
       const newMatches = matchCountRef.current + 1;
 
-      scoreRef.current = newScore;
       matchCountRef.current = newMatches;
-      setScore(newScore);
       setMatchCount(newMatches);
-
-      if (newScore > bestScoreRef.current) {
-        setBestScore(newScore);
-        bestScoreRef.current = newScore;
-        try {
-          localStorage.setItem('ppm_vintage_match_best', String(newScore));
-        } catch {
-          // Storage guard
-        }
-      }
 
       // Accelerate speed after every 2 matches
       const nextSpeed = calculateSpeed(newMatches);
@@ -142,7 +115,7 @@ export function VintageWineMatch({ onGameOver, onExit, onNewPlayer }: VintageWin
       posRef.current = targetXRef.current;
       updateGlassPosition(targetXRef.current);
 
-      setToast(`🍷 ${isExact ? t('PERFECT MATCH!') : t('MATCH LOCKED!')} ${percentage}% (+${points})${newMatches >= 2 && newMatches % 2 === 0 ? ` (⚡ ${speedMult}x Speed)` : ''}`);
+      setToast(`🍷 ${t('MATCH LOCKED!')} ${percentage}%${newMatches >= 2 && newMatches % 2 === 0 ? ` (⚡ ${speedMult}x Speed)` : ''}`);
       setConfettiBurst((c) => c + 1);
 
       phaseRef.current = 'matched';
@@ -152,7 +125,7 @@ export function VintageWineMatch({ onGameOver, onExit, onNewPlayer }: VintageWin
         phaseRef.current = 'gameover';
         setPhase('gameover');
         soundManager.duckMusic();
-        onGameOver?.(newScore, percentage);
+        onGameOver?.(newMatches, percentage);
       } else {
         setPhase('matched');
       }
@@ -163,7 +136,7 @@ export function VintageWineMatch({ onGameOver, onExit, onNewPlayer }: VintageWin
       soundManager.playFail();
       haptics.fail();
       soundManager.duckMusic();
-      onGameOver?.(scoreRef.current, percentage);
+      onGameOver?.(matchCountRef.current, percentage);
     }
   }, [baseSpeed, calculateSpeed, onGameOver, settings.pictureMatchMode, t]);
 
@@ -180,10 +153,8 @@ export function VintageWineMatch({ onGameOver, onExit, onNewPlayer }: VintageWin
   }, [phase, pickNextTarget, resetGlassToStart]);
 
   const handleRestart = useCallback(() => {
-    setScore(0);
     setMatchCount(0);
     setLastPercentage(null);
-    scoreRef.current = 0;
     matchCountRef.current = 0;
     speedRef.current = baseSpeed;
     const initialX = 66.5;
@@ -238,31 +209,25 @@ export function VintageWineMatch({ onGameOver, onExit, onNewPlayer }: VintageWin
   }, []);
 
   const currentSpeedMultiplier = (speedRef.current / baseSpeed).toFixed(1);
+  const isMultiMatch = settings.pictureMatchMode !== 'single';
+  const resultValue = isMultiMatch
+    ? `${matchCount} ${t(matchCount === 1 ? 'match' : 'matches')}`
+    : `${lastPercentage ?? 0}%`;
 
   return (
     <div className="vintage-picture-match-container">
-      {/* Kiosk Arcade HUD (NO LIVES / NO HEARTS DISPLAYED) */}
-      <header className="picture-match-hud">
-        <div className="picture-match-score">
-          <span>{t('Score')}</span>
-          <strong>{score}</strong>
-        </div>
-
-        <div className="picture-match-count">
-          <span>{t('Matches')}</span>
-          <strong>{matchCount}</strong>
-        </div>
-
-        <div className="picture-match-count">
-          <span>{t('Speed')}</span>
-          <strong>{currentSpeedMultiplier}x</strong>
-        </div>
-
-        <div className="picture-match-count">
-          <span>{t('Best')}</span>
-          <strong>{bestScore}</strong>
-        </div>
-      </header>
+      {isMultiMatch && (
+        <header className="picture-match-hud">
+          <div className="picture-match-count">
+            <span>{t('Matches')}</span>
+            <strong>{matchCount}</strong>
+          </div>
+          <div className="picture-match-count">
+            <span>{t('Speed')}</span>
+            <strong>{currentSpeedMultiplier}x</strong>
+          </div>
+        </header>
+      )}
 
       {/* Main Vintage Vineyard Stage Board */}
       <div
@@ -361,9 +326,9 @@ export function VintageWineMatch({ onGameOver, onExit, onNewPlayer }: VintageWin
       {/* Sudden-Death Game Over Dialog */}
       <GameResultDialog
         isOpen={phase === 'gameover'}
-        won={score > 0}
-        result={`${score} pts (${matchCount} ${matchCount === 1 ? 'match' : 'matches'}${lastPercentage !== null ? `, ${lastPercentage}%` : ''})`}
-        resultLabel={score > 0 ? 'Vintage Score' : 'Missed Match'}
+        won={matchCount > 0}
+        result={resultValue}
+        resultLabel={isMultiMatch ? 'Matches' : 'Match percentage'}
         onAction={handleRestart}
         onNewPlayer={onNewPlayer}
         onExit={onExit}

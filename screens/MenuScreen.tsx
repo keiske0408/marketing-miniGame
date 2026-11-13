@@ -5,7 +5,7 @@ import { MenuButton } from '../components/MenuButton';
 import { Avatar } from '../components/Avatar';
 import { Modal } from '../components/Modal';
 import { useGameStore } from '../store/gameStore';
-import { HOW_TO_PLAY_STEPS } from '../config/constants';
+import { HOW_TO_PLAY_STEPS, TIMER_GAME_NAME } from '../config/constants';
 import { soundManager } from '../services/audio';
 import type { GameMode } from '../types';
 
@@ -17,6 +17,7 @@ export function MenuScreen() {
   const rewards = useGameStore((state) => state.rewards);
   const logout = useGameStore((state) => state.logout);
   const startRun = useGameStore((state) => state.startRun);
+  const showLeaderboard = useGameStore((state) => state.settings.showLeaderboard !== false);
 
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const unclaimedRewardsCount = rewards.filter((r) => !r.claimed).length;
@@ -110,7 +111,7 @@ export function MenuScreen() {
             badge={`RESUME • ${run.score} PTS`}
             // subtitle="Continue your active stopwatch challenge"
           >
-            ▶ RESUME THE PERFECT 23
+            ▶ RESUME {TIMER_GAME_NAME.toUpperCase()}
           </MenuButton>
         ) : (
           <MenuButton
@@ -120,18 +121,18 @@ export function MenuScreen() {
             badge="GAME 2 • FAST PACED"
             // subtitle="Hit the target second on the stopwatch to win"
           >
-            PLAY THE PERFECT 23
+            PLAY {TIMER_GAME_NAME.toUpperCase()}
           </MenuButton>
         )}
 
-        <div className="menu-two-col">
-          <MenuButton
+        <div className={showLeaderboard ? 'menu-two-col' : undefined}>
+          {showLeaderboard && <MenuButton
             variant="ghost"
             onClick={() => navigate('/leaderboard')}
             badge="LIVE"
           >
             🏆 LEADERBOARD
-          </MenuButton>
+          </MenuButton>}
 
           <MenuButton
             variant="ghost"

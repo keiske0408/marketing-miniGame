@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { HomeScreen } from './screens/HomeScreen';
 import { SelectedGameScreen } from './screens/SelectedGameScreen';
 import { PlayerConsentScreen } from './screens/PlayerConsentScreen';
@@ -15,6 +15,25 @@ import { Toast } from './components/Toast';
 import { useGameStore } from './store/gameStore';
 import { soundManager } from './services/audio';
 import { translate } from './services/i18n';
+import { EVENT_NAME, TIMER_GAME_NAME } from './config/constants';
+import { designPalette } from './services/eventRules';
+
+function RoutePresentation() {
+  const { pathname } = useLocation();
+  const mode = useGameStore((state) => state.selectedGameMode);
+
+  useEffect(() => {
+    const gamePage = ['/game', '/player', '/play'].includes(pathname);
+    const title = gamePage ? mode === 'target-timer' ? TIMER_GAME_NAME : 'Vintage Picture Match' : 'Game Lounge';
+    document.title = `${title} | ${EVENT_NAME}`;
+  }, [pathname, mode]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 
 export default function App() {
   const settings = useGameStore((state) => state.settings);
@@ -39,6 +58,21 @@ export default function App() {
     // Synchronize sound settings on mount
     soundManager.updateSettings(settings);
   }, [settings]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const palette = designPalette(settings);
+    const variables: Record<string, string | undefined> = {
+      '--design-color': palette?.color,
+      '--design-panel': palette?.panel,
+      '--design-card': palette?.card,
+      '--design-card-hover': palette?.cardHover,
+    };
+    Object.entries(variables).forEach(([name, value]) => (value ? root.style.setProperty(name, value) : root.style.removeProperty(name)));
+    root.toggleAttribute('data-design-tint', Boolean(palette));
+    root.setAttribute('data-event-bg', settings.eventBackground ?? 'ribbon');
+    root.toggleAttribute('data-reduced-motion', settings.reducedMotion);
+  }, [settings.designColor, settings.customDesignColor, settings.eventBackground, settings.reducedMotion]);
 
   useEffect(() => {
     // Global user-gesture listener to unlock AudioContext on any screen upon first tap/click/key
@@ -81,25 +115,42 @@ export default function App() {
       'summary',
     ].join(', ');
 
-    const triggerClickSound = (target: EventTarget | null) => {
-      if (!(target instanceof Element)) return;
-      const interactive = target.closest(INTERACTIVE_SELECTOR);
+    let lastHandledEl: Element | null = null;
+    let lastHandledAt = 0;
+
+    const findInteractive = (target: EventTarget | null) => {
+      if (!(target instanceof Element)) return null;
+      return target.closest(INTERACTIVE_SELECTOR);
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const interactive = findInteractive(event.target);
       if (interactive) {
+        lastHandledEl = interactive;
+        lastHandledAt = performance.now();
         soundManager.playClick();
       }
     };
 
-    const handlePointerDown = (event: PointerEvent) => {
-      triggerClickSound(event.target);
-    };
-
     const handleClick = (event: MouseEvent) => {
-      triggerClickSound(event.target);
+      const interactive = findInteractive(event.target);
+      if (!interactive) return;
+      // Avoid double-triggering if pointerdown or keydown already handled this element press
+      if (interactive === lastHandledEl && performance.now() - lastHandledAt < 1500) {
+        lastHandledEl = null;
+        return;
+      }
+      soundManager.playClick();
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-      triggerClickSound(event.target);
+      if (event.repeat || (event.key !== 'Enter' && event.key !== ' ')) return;
+      const interactive = findInteractive(event.target);
+      if (interactive) {
+        lastHandledEl = interactive;
+        lastHandledAt = performance.now();
+        soundManager.playClick();
+      }
     };
 
     window.addEventListener('pointerdown', handlePointerDown, { capture: true, passive: true });
@@ -115,6 +166,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <RoutePresentation />
       <div className="app-shell">
         <Routes>
           <Route path="/" element={<HomeScreen />} />
@@ -133,7 +185,7 @@ export default function App() {
           />
           <Route path="/play" element={<GameScreen />} />
           <Route path="/settings" element={<SettingsScreen />} />
-          <Route path="/leaderboard" element={<LeaderboardScreen />} />
+          <Route path="/leaderboard" element={settings.showLeaderboard === false ? <Navigate to="/" replace /> : <LeaderboardScreen />} />
           <Route
             path="/rewards"
             element={

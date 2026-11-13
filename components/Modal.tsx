@@ -13,6 +13,8 @@ interface ModalProps {
   actions?: ReactNode;
   maxWidth?: string;
   className?: string;
+  overlayClassName?: string;
+  headingDecoration?: ReactNode;
   dismissible?: boolean;
 }
 
@@ -24,6 +26,8 @@ export function Modal({
   actions,
   maxWidth = '440px',
   className = '',
+  overlayClassName = '',
+  headingDecoration,
   dismissible = true,
 }: ModalProps) {
   const t = useTranslation();
@@ -75,7 +79,7 @@ export function Modal({
 
   return createPortal(
     <div
-      className="overlay modal-overlay"
+      className={`overlay modal-overlay ${overlayClassName}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -89,6 +93,7 @@ export function Modal({
     >
       <div className={`card modal-card ${className}`} style={{ maxWidth }}>
         <div className="modal-header">
+          {headingDecoration}
           <h2 id={titleId}>{title}</h2>
           {dismissible && <button
             type="button"

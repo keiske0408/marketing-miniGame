@@ -1,7 +1,9 @@
 import type { UserSettings } from '../types';
 
 export const EVENT_NAME =
-  import.meta.env?.VITE_EVENT_NAME || 'GRAND VINTAGE 2026 // WINE TASTING GALA';
+  import.meta.env?.VITE_EVENT_NAME || 'The 23rd Grand Wine Experience';
+
+export const TIMER_GAME_NAME = 'Stop the Clock Challenge';
 
 export const BRAND_COLORS = {
   primary: '#4A0718',   // Deep Burgundy
@@ -35,7 +37,18 @@ export const DEFAULT_SETTINGS: UserSettings = {
   requirePlayerName: false,
   requirePlayerEmail: false,
   requirePlayerPhone: false,
+  designColor: 'violet',
+  customDesignColor: '#210e64',
+  eventBackground: 'ribbon',
+  showLeaderboard: true,
+  showGuidelines: true,
 };
+
+export const DESIGN_COLORS = {
+  violet: '#210e64',  // Violet Velocity (primary)
+  mischka: '#e0dae6', // Mischka Pink
+  slate: '#e8e7e2',   // Solid Slate
+} as const;
 
 export const HOW_TO_PLAY_STEPS = [
   {
@@ -43,8 +56,8 @@ export const HOW_TO_PLAY_STEPS = [
     desc: 'In Multi-match mode, each successful stop earns another match until you miss. In One match mode, the game ends after your first successful match. Tap Stop or press Space when the moving glass overlaps its outline.',
   },
   {
-    title: 'Game 2: THE PERFECT 23',
-    desc: 'A Stop the Clock Challenge. 23 Seconds. One Perfect Moment. Participants must stop a running timer as close as possible to 23.00 seconds to win a prize. The event host can adjust the target and winning range in Settings.',
+    title: `Game 2: ${TIMER_GAME_NAME}`,
+    desc: 'Start the clock, then stop as close to the event target as you can. Hit the winning zone to win a prize. The event host can adjust the target and winning range in Settings.',
   },
   {
     title: 'Claim Tasting & Bottle Rewards',

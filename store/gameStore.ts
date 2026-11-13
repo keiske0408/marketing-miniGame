@@ -24,9 +24,17 @@ interface ToastState {
   type: 'success' | 'error' | 'info';
 }
 
+interface KioskPlayer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  timerInstructionsSeen?: boolean;
+}
+
 interface GameStoreState {
-  kioskPlayer: { id: string; name: string; email: string; phone: string } | null;
-  setKioskPlayer: (player: { id: string; name: string; email: string; phone: string } | null) => void;
+  kioskPlayer: KioskPlayer | null;
+  setKioskPlayer: (player: KioskPlayer | null) => void;
   // Game Mode Selection
   selectedGameMode: GameMode;
   setGameMode: (mode: GameMode) => void;

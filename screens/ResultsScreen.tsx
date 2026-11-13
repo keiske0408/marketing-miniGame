@@ -6,6 +6,7 @@ import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
 import { supabaseService } from '../services/supabase';
 import type { GameMode } from '../types';
+import { TIMER_GAME_NAME } from '../config/constants';
 
 interface ResultsProps {
   score: number;
@@ -81,7 +82,7 @@ export function ResultsScreen({
             addReward({
               id: `rew-${Date.now()}`,
               title: 'Sommelier Reserve Voucher',
-              description: `Earned ${score} pts in ${gameMode === 'target-timer' ? 'THE PERFECT 23' : 'Vintage Picture Match'}! Present at the Sommelier Bar.`,
+              description: `Earned ${score} pts in ${gameMode === 'target-timer' ? TIMER_GAME_NAME : 'Vintage Picture Match'}! Present at the Sommelier Bar.`,
               badge: '🍾',
               code: data.rewardCode,
               unlockedAt: new Date().toISOString(),
@@ -101,7 +102,7 @@ export function ResultsScreen({
             addReward({
               id: `rew-${Date.now()}`,
               title: 'Sommelier Reserve Voucher',
-              description: `Earned ${score} pts in ${gameMode === 'target-timer' ? 'THE PERFECT 23' : 'Vintage Picture Match'}! Present at the Sommelier Bar.`,
+              description: `Earned ${score} pts in ${gameMode === 'target-timer' ? TIMER_GAME_NAME : 'Vintage Picture Match'}! Present at the Sommelier Bar.`,
               badge: '🍾',
               code,
               unlockedAt: new Date().toISOString(),
@@ -122,13 +123,13 @@ export function ResultsScreen({
     haptics.tick();
 
     const gameLabel =
-      gameMode === 'target-timer' ? 'THE PERFECT 23' : 'Vintage Picture Match';
+      gameMode === 'target-timer' ? TIMER_GAME_NAME : 'Vintage Picture Match';
     const text = `🍷 I scored ${score} pts (Vintage ${level}, ${avgAccuracy}% precision) in ${gameLabel} at the Grand Vintage Wine Event!`;
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Grand Vintage Wine Challenge',
+          title: gameMode === 'target-timer' ? TIMER_GAME_NAME : 'Grand Vintage Wine Challenge',
           text,
           url: window.location.origin,
         });
@@ -154,7 +155,7 @@ export function ResultsScreen({
           <h2>Tasting Complete!</h2>
           <p className="results-sub">
             {gameMode === 'target-timer'
-              ? 'THE PERFECT 23 Summary'
+              ? `${TIMER_GAME_NAME} Summary`
               : 'Vintage Picture Match Summary'}
           </p>
         </div>

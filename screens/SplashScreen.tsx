@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
-import { EVENT_NAME } from '../config/constants';
+import { EVENT_NAME, TIMER_GAME_NAME } from '../config/constants';
 import { SCENES } from '../images';
 
 export function SplashScreen() {
@@ -56,7 +56,7 @@ export function SplashScreen() {
         <div className="splash-logo-box">
           <h1 className="logo splash-logo">CHÂTEAU ARCADE</h1>
           <p className="splash-subtitle">
-            Vintage Picture Match &amp; The Perfect Pour Stopwatch Challenge
+            Vintage Picture Match &amp; {TIMER_GAME_NAME}
           </p>
         </div>
 

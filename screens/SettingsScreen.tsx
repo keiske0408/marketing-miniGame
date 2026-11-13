@@ -10,6 +10,15 @@ import { useTranslation } from '../services/i18n';
 import { soundManager } from '../services/audio';
 import type { Difficulty, PictureMatchMode, ThemeMode } from '../types';
 import { displayedSeconds, timerRules, validTimerRules } from '../services/eventRules';
+import { DESIGN_COLORS, TIMER_GAME_NAME } from '../config/constants';
+import ribbonBackground from '../assets/wine_game_UI/SCREEN 2/7.png';
+import circlesBackground from '../assets/wine_game_UI/SCREEN 2/5.png';
+
+const DESIGN_PRESETS = [
+  ['violet', 'Violet Velocity'],
+  ['mischka', 'Mischka Pink'],
+  ['slate', 'Solid Slate'],
+] as const;
 
 export function SettingsScreen() {
   const t = useTranslation();
@@ -27,6 +36,9 @@ export function SettingsScreen() {
     target: rules.target.toFixed(2), winMin: rules.winMin.toFixed(2), winMax: rules.winMax.toFixed(2),
   });
   const [timerError, setTimerError] = useState(false);
+  const designColor = settings.designColor ?? 'violet';
+  const customColor = settings.customDesignColor ?? DESIGN_COLORS.violet;
+  const eventBackground = settings.eventBackground ?? 'ribbon';
 
   const [editName, setEditName] = useState(user?.displayName || '');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -79,9 +91,9 @@ export function SettingsScreen() {
         <h2 className="section-title">{t('Event controls')}</h2>
         <div className="settings-card">
           <form className="event-timer-form" onSubmit={saveTimerRules} noValidate>
-            <h3>THE PERFECT 23</h3>
+            <h3>{TIMER_GAME_NAME}</h3>
             {([
-              ['target', 'THE PERFECT 23 target (seconds)'],
+              ['target', `${TIMER_GAME_NAME} target (seconds)`],
               ['winMin', 'Winning minimum (seconds)'],
               ['winMax', 'Winning maximum (seconds)'],
             ] as const).map(([field, label]) => (
@@ -97,7 +109,7 @@ export function SettingsScreen() {
               {t('Saved winning range (inclusive)')}: <strong>{rules.winMin.toFixed(2)}s – {rules.winMax.toFixed(2)}s</strong>
             </p>
             {timerError && <p id="timer-settings-error" className="text-danger" role="alert">{t('Enter a target from 1 to 300 seconds and an ordered winning range from 0 to 300 seconds.')}</p>}
-            <button type="submit" className="btn small-btn">{t('Save THE PERFECT 23 rules')}</button>
+            <button type="submit" className="btn small-btn">{t(`Save ${TIMER_GAME_NAME} rules`)}</button>
           </form>
           <div className="picture-speed-setting">
             <div className="setting-row">
@@ -123,6 +135,51 @@ export function SettingsScreen() {
             onChange={(value) => updateSettings({ requirePlayerEmail: value })} />
           <Toggle label={t('Require player phone number')} checked={Boolean(settings.requirePlayerPhone)}
             onChange={(value) => updateSettings({ requirePlayerPhone: value })} />
+          <Toggle label={t('Show leaderboard')} checked={settings.showLeaderboard !== false}
+            onChange={(showLeaderboard) => updateSettings({ showLeaderboard })} />
+          <p className="settings-hint">{t('When off, standings are hidden in both games, the menu, and the leaderboard page.')}</p>
+          <Toggle label={t('Show guidelines')} checked={settings.showGuidelines !== false}
+            onChange={(showGuidelines) => updateSettings({ showGuidelines })} />
+          <p className="settings-hint">{t('When off, the target pill and gold target line are hidden in the Stop the Clock Challenge.')}</p>
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <h2 className="section-title">{t('Design')}</h2>
+        <div className="settings-card">
+          <h3 className="design-group-title" id="design-color-heading">{t('Design color')}</h3>
+          <div className="language-options design-options" role="group" aria-labelledby="design-color-heading">
+            {DESIGN_PRESETS.map(([value, name]) => (
+              <button key={value} type="button" aria-pressed={designColor === value} onClick={() => updateSettings({ designColor: value })}>
+                <i className="design-swatch" style={{ background: DESIGN_COLORS[value] }} aria-hidden="true" />
+                <strong>{name}</strong>
+                <span>{DESIGN_COLORS[value]}</span>
+                {designColor === value && <small>{t('Selected')}</small>}
+              </button>
+            ))}
+            <button type="button" aria-pressed={designColor === 'custom'} onClick={() => updateSettings({ designColor: 'custom' })}>
+              <i className="design-swatch" style={{ background: customColor }} aria-hidden="true" />
+              <strong>{t('Custom color')}</strong>
+              <span>{customColor}</span>
+              {designColor === 'custom' && <small>{t('Selected')}</small>}
+            </button>
+          </div>
+          <div className="setting-row">
+            <label htmlFor="custom-design-color" className="setting-row-label">{t('Pick a custom color')}</label>
+            <input id="custom-design-color" type="color" className="design-color-input" value={customColor}
+              onChange={(event) => updateSettings({ designColor: 'custom', customDesignColor: event.target.value })} />
+          </div>
+          <p className="settings-hint">{t('Light colors tint the artwork instead of filling it, so white text stays readable.')}</p>
+          <h3 className="design-group-title" id="design-background-heading">{t('Background')}</h3>
+          <div className="language-options design-options" role="group" aria-labelledby="design-background-heading">
+            {([['ribbon', ribbonBackground, 'Violet ribbons'], ['circles', circlesBackground, 'Violet circles']] as const).map(([value, image, name]) => (
+              <button key={value} type="button" aria-pressed={eventBackground === value} onClick={() => updateSettings({ eventBackground: value })}>
+                <img className="design-background-thumb" src={image} alt="" />
+                <strong>{t(name)}</strong>
+                {eventBackground === value && <small>{t('Selected')}</small>}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
