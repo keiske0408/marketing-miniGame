@@ -5,7 +5,7 @@ import { MenuButton } from '../components/MenuButton';
 import { Avatar } from '../components/Avatar';
 import { Modal } from '../components/Modal';
 import { useGameStore } from '../store/gameStore';
-import { HOW_TO_PLAY_STEPS, TIMER_GAME_NAME } from '../config/constants';
+import { HOW_TO_PLAY_STEPS, SHOW_PICTURE_MATCH, TIMER_GAME_NAME } from '../config/constants';
 import { soundManager } from '../services/audio';
 import type { GameMode } from '../types';
 
@@ -81,7 +81,7 @@ export function MenuScreen() {
 
       {/* Main Action Buttons */}
       <div className="menu-actions-stack">
-        {run.isActive && run.gameMode === 'picture-match' ? (
+        {SHOW_PICTURE_MATCH && (run.isActive && run.gameMode === 'picture-match' ? (
           <MenuButton
             variant="accent"
             onClick={handleContinue}
@@ -101,7 +101,7 @@ export function MenuScreen() {
           >
             PLAY VINTAGE PICTURE MATCH
           </MenuButton>
-        )}
+        ))}
 
         {run.isActive && run.gameMode === 'target-timer' ? (
           <MenuButton

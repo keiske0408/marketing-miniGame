@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { UserProfile, UserSettings, Consents, RewardItem, GameMode } from '../types';
-import { DEFAULT_SETTINGS } from '../config/constants';
+import { DEFAULT_SETTINGS, SHOW_PICTURE_MATCH } from '../config/constants';
 import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
 import { supabaseService } from '../services/supabase';
@@ -81,9 +81,11 @@ interface GameStoreState {
   clearToast: () => void;
 }
 
+const DEFAULT_GAME_MODE: GameMode = SHOW_PICTURE_MATCH ? 'picture-match' : 'target-timer';
+
 const initialRunState: GameRunState = {
   isActive: false,
-  gameMode: 'picture-match',
+  gameMode: DEFAULT_GAME_MODE,
   level: 1,
   score: 0,
   matches: 0,
@@ -98,8 +100,8 @@ export const useGameStore = create<GameStoreState>()(
     (set, get) => ({
       kioskPlayer: null,
       setKioskPlayer: (player) => set({ kioskPlayer: player }),
-      selectedGameMode: 'picture-match',
-      setGameMode: (mode) => set({ selectedGameMode: mode }),
+      selectedGameMode: DEFAULT_GAME_MODE,
+      setGameMode: (mode) => set({ selectedGameMode: !SHOW_PICTURE_MATCH && mode === 'picture-match' ? 'target-timer' : mode }),
 
       // Auth
       user: null,
@@ -376,7 +378,11 @@ export const useGameStore = create<GameStoreState>()(
       storage: createJSONStorage(() => localStorage),
       merge: (persisted, current) => {
         const saved = persisted as Partial<GameStoreState> | undefined;
-        return { ...current, ...saved, settings: normalizeSettings(saved?.settings ?? {}) };
+        const selectedGameMode =
+          !SHOW_PICTURE_MATCH && saved?.selectedGameMode === 'picture-match'
+            ? 'target-timer'
+            : (saved?.selectedGameMode ?? current.selectedGameMode);
+        return { ...current, ...saved, selectedGameMode, settings: normalizeSettings(saved?.settings ?? {}) };
       },
       onRehydrateStorage: () => (state) => {
         if (state?.settings) {

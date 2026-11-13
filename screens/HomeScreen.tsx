@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Sliders, Wine, Clock, Gamepad2, Sparkles } from 'lucide-react';
 import { EventBrand } from '../components/EventBrand';
-import { TIMER_GAME_NAME } from '../config/constants';
+import { SHOW_PICTURE_MATCH, TIMER_GAME_NAME } from '../config/constants';
 import { useGameStore } from '../store/gameStore';
 import { useTranslation } from '../services/i18n';
 import { timerRules } from '../services/eventRules';
@@ -30,12 +30,12 @@ export function HomeScreen() {
           </div>
           <EventBrand />
           <div className="event-lobby-title">
-            <span className="event-eyebrow">{t('YOUR NEXT CHALLENGE')}</span>
-            <h1 className="event-heading">{t('Choose a game')}</h1>
+            {/* <span className="event-eyebrow">{t('YOUR NEXT CHALLENGE')}</span> */}
+            <h1 className="event-heading">{t('The perfect 23')}</h1>
             <div className="event-lobby-divider" aria-hidden="true"><span /><Gamepad2 /><span /></div>
           </div>
         </header>
-        <div className="event-game-grid">
+        <div className={SHOW_PICTURE_MATCH ? 'event-game-grid' : 'event-game-grid event-game-grid-single'}>
           <button
             type="button"
             className="event-game-card"
@@ -68,37 +68,39 @@ export function HomeScreen() {
             </div>
           </button>
 
-          <button
-            type="button"
-            className="event-game-card"
-            onClick={() => selectGame('picture-match')}
-          >
-            <div className="event-card-tags">
-              <span className="game-num">{t('CHALLENGE')} 02</span>
-              <span className="game-type-badge">
-                <Wine className="w-3.5 h-3.5" aria-hidden="true" />
-                {t('Picture match')}
-              </span>
-            </div>
-
-            <div className="event-card-media event-card-picture">
-              <img
-                src="/images/vintage-game-scene.jpg"
-                alt="Vintage vineyard estate picture match scene"
-              />
-            </div>
-
-            <div className="event-card-copy">
-              <div className="event-card-title">
-                <h2>Vintage Picture Match</h2>
-                <ArrowRight className="card-arrow" aria-hidden="true" />
+          {SHOW_PICTURE_MATCH && (
+            <button
+              type="button"
+              className="event-game-card"
+              onClick={() => selectGame('picture-match')}
+            >
+              <div className="event-card-tags">
+                <span className="game-num">{t('CHALLENGE')} 02</span>
+                <span className="game-type-badge">
+                  <Wine className="w-3.5 h-3.5" aria-hidden="true" />
+                  {t('Picture match')}
+                </span>
               </div>
-              <p className="card-description">
-                {t('Match the glass to its outline.')}
-              </p>
-              <span className="event-card-action">{t('Select game')} <ArrowRight aria-hidden="true" /></span>
-            </div>
-          </button>
+
+              <div className="event-card-media event-card-picture">
+                <img
+                  src="/images/vintage-game-scene.jpg"
+                  alt="Vintage vineyard estate picture match scene"
+                />
+              </div>
+
+              <div className="event-card-copy">
+                <div className="event-card-title">
+                  <h2>Vintage Picture Match</h2>
+                  <ArrowRight className="card-arrow" aria-hidden="true" />
+                </div>
+                <p className="card-description">
+                  {t('Match the glass to its outline.')}
+                </p>
+                <span className="event-card-action">{t('Select game')} <ArrowRight aria-hidden="true" /></span>
+              </div>
+            </button>
+          )}
         </div>
 
         <footer className="event-entry-footer">

@@ -5,6 +5,8 @@ export const EVENT_NAME =
 
 export const TIMER_GAME_NAME = 'The Perfect 23';
 
+export const SHOW_PICTURE_MATCH = false;
+
 export const BRAND_COLORS = {
   primary: '#4A0718',   // Deep Burgundy
   darkWine: '#720D28',  // Dark Wine Red
@@ -51,16 +53,22 @@ export const DESIGN_COLORS = {
 } as const;
 
 export const HOW_TO_PLAY_STEPS = [
+  ...(SHOW_PICTURE_MATCH
+    ? [
+        {
+          title: 'Game 1: Vintage Picture Match (Wine Edition)',
+          desc: 'In Multi-match mode, each successful stop earns another match until you miss. In One match mode, the game ends after your first successful match. Tap Stop or press Space when the moving glass overlaps its outline.',
+        },
+      ]
+    : []),
   {
-    title: 'Game 1: Vintage Picture Match (Wine Edition)',
-    desc: 'In Multi-match mode, each successful stop earns another match until you miss. In One match mode, the game ends after your first successful match. Tap Stop or press Space when the moving glass overlaps its outline.',
-  },
-  {
-    title: `Game 2: ${TIMER_GAME_NAME}`,
+    title: SHOW_PICTURE_MATCH ? `Game 2: ${TIMER_GAME_NAME}` : TIMER_GAME_NAME,
     desc: 'Start the clock, then stop as close to the event target as you can. Hit the winning zone to win a prize. The event host can adjust the target and winning range in Settings.',
   },
   {
     title: 'Claim Tasting & Bottle Rewards',
-    desc: 'Score points in either challenge to unlock complimentary tasting pours, sommelier vouchers, and cellar discounts at the Grand Vintage Tasting Bar.',
+    desc: SHOW_PICTURE_MATCH
+      ? 'Score points in either challenge to unlock complimentary tasting pours, sommelier vouchers, and cellar discounts at the Grand Vintage Tasting Bar.'
+      : 'Score points in the challenge to unlock complimentary tasting pours, sommelier vouchers, and cellar discounts at the Grand Vintage Tasting Bar.',
   },
 ];

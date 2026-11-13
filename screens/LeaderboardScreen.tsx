@@ -9,14 +9,14 @@ import { formatEventScore, rankScores } from '../services/eventScores';
 import { useEventScores } from '../services/useEventScores';
 import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
-import { TIMER_GAME_NAME } from '../config/constants';
+import { SHOW_PICTURE_MATCH, TIMER_GAME_NAME } from '../config/constants';
 
 export function LeaderboardScreen() {
   const t = useTranslation();
   const player = useGameStore((state) => state.kioskPlayer);
   const user = useGameStore((state) => state.user);
   const activeName = player?.name || user?.displayName || '';
-  const [tab, setTab] = useState<'all' | 'picture-match' | 'target-timer'>('all');
+  const [tab, setTab] = useState<'all' | 'picture-match' | 'target-timer'>(SHOW_PICTURE_MATCH ? 'all' : 'target-timer');
   const { scores, refresh, error } = useEventScores();
 
   const handleRefresh = () => {
@@ -85,16 +85,18 @@ export function LeaderboardScreen() {
       }
       className="leaderboard-screen"
     >
-      <Tabs
-        tabs={[
-          { id: 'all', label: t('ALL CHALLENGES') },
-          { id: 'picture-match', label: `🖼️ ${t('PICTURE MATCH')}` },
-          { id: 'target-timer', label: `⏱️ ${TIMER_GAME_NAME}` },
-        ]}
-        activeTab={tab}
-        onChange={(id) => setTab(id as 'all' | 'picture-match' | 'target-timer')}
-        className="leaderboard-tabs"
-      />
+      {SHOW_PICTURE_MATCH && (
+        <Tabs
+          tabs={[
+            { id: 'all', label: t('ALL CHALLENGES') },
+            { id: 'picture-match', label: `🖼️ ${t('PICTURE MATCH')}` },
+            { id: 'target-timer', label: `⏱️ ${TIMER_GAME_NAME}` },
+          ]}
+          activeTab={tab}
+          onChange={(id) => setTab(id as 'all' | 'picture-match' | 'target-timer')}
+          className="leaderboard-tabs"
+        />
+      )}
 
       {/* Current User Standing Card */}
       {personalBest && (

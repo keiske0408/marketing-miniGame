@@ -10,7 +10,7 @@ import { useTranslation } from '../services/i18n';
 import { soundManager } from '../services/audio';
 import type { Difficulty, PictureMatchMode, ThemeMode } from '../types';
 import { displayedSeconds, timerRules, validTimerRules } from '../services/eventRules';
-import { DESIGN_COLORS, TIMER_GAME_NAME } from '../config/constants';
+import { DESIGN_COLORS, SHOW_PICTURE_MATCH, TIMER_GAME_NAME } from '../config/constants';
 import ribbonBackground from '../assets/wine_game_UI/SCREEN 2/7.png';
 import circlesBackground from '../assets/wine_game_UI/SCREEN 2/5.png';
 
@@ -111,24 +111,26 @@ export function SettingsScreen() {
             {timerError && <p id="timer-settings-error" className="text-danger" role="alert">{t('Enter a target from 1 to 300 seconds and an ordered winning range from 0 to 300 seconds.')}</p>}
             <button type="submit" className="btn small-btn">{t(`Save ${TIMER_GAME_NAME} rules`)}</button>
           </form>
-          <div className="picture-speed-setting">
-            <div className="setting-row">
-              <label htmlFor="picture-match-mode" className="setting-row-label">{t('Picture Match mode')}</label>
-              <select id="picture-match-mode" className="select-input"
-                value={settings.pictureMatchMode ?? 'multi'}
-                onChange={(event) => {
-                  soundManager.playClick();
-                  updateSettings({ pictureMatchMode: event.target.value as PictureMatchMode });
-                }}>
-                <option value="multi">{t('Multi-match (continue until you miss)')}</option>
-                <option value="single">{t('One match (end after one success)')}</option>
-              </select>
+          {SHOW_PICTURE_MATCH && (
+            <div className="picture-speed-setting">
+              <div className="setting-row">
+                <label htmlFor="picture-match-mode" className="setting-row-label">{t('Picture Match mode')}</label>
+                <select id="picture-match-mode" className="select-input"
+                  value={settings.pictureMatchMode ?? 'multi'}
+                  onChange={(event) => {
+                    soundManager.playClick();
+                    updateSettings({ pictureMatchMode: event.target.value as PictureMatchMode });
+                  }}>
+                  <option value="multi">{t('Multi-match (continue until you miss)')}</option>
+                  <option value="single">{t('One match (end after one success)')}</option>
+                </select>
+              </div>
+              <p className="settings-hint">{t('Multi-match lets players keep matching until they miss. One match ends after the first successful match.')}</p>
+              <Slider label={t('Picture Match speed')} value={settings.pictureSpeed ?? 1}
+                min={0.25} max={2} step={0.05} unit="×" onChange={(pictureSpeed) => updateSettings({ pictureSpeed })} />
+              <p className="settings-hint">{t('Lower is slower. Applies alongside difficulty.')}</p>
             </div>
-            <p className="settings-hint">{t('Multi-match lets players keep matching until they miss. One match ends after the first successful match.')}</p>
-            <Slider label={t('Picture Match speed')} value={settings.pictureSpeed ?? 1}
-              min={0.25} max={2} step={0.05} unit="×" onChange={(pictureSpeed) => updateSettings({ pictureSpeed })} />
-            <p className="settings-hint">{t('Lower is slower. Applies alongside difficulty.')}</p>
-          </div>
+          )}
           <Toggle label={t('Require player name')} checked={Boolean(settings.requirePlayerName)}
             onChange={(value) => updateSettings({ requirePlayerName: value })} />
           <Toggle label={t('Require player email')} checked={Boolean(settings.requirePlayerEmail)}
