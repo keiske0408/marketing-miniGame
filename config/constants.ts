@@ -3,7 +3,7 @@ import type { UserSettings } from '../types';
 export const EVENT_NAME =
   import.meta.env?.VITE_EVENT_NAME || 'The 23rd Grand Wine Experience';
 
-export const TIMER_GAME_NAME = 'Stop the Clock Challenge';
+export const TIMER_GAME_NAME = 'The Perfect 23';
 
 export const BRAND_COLORS = {
   primary: '#4A0718',   // Deep Burgundy
