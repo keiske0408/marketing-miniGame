@@ -32,6 +32,7 @@ export interface UserSettings {
   timerCustomTarget?: number;        // e.g. 5.0, 3.0, 7.0 seconds
   timerWinMin?: number;
   timerWinMax?: number;
+  allowTimerReplay?: boolean;
   pictureSpeed?: number;
   pictureMatchMode?: PictureMatchMode;
   requirePlayerName?: boolean;

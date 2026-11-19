@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS, SHOW_PICTURE_MATCH } from '../config/constants';
 import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
 import { supabaseService } from '../services/supabase';
-import { normalizeSettings } from '../services/eventRules';
+import { migrateLegacyTimerDefaults, normalizeSettings } from '../services/eventRules';
 
 interface GameRunState {
   isActive: boolean;
@@ -30,6 +30,7 @@ interface KioskPlayer {
   email: string;
   phone: string;
   timerInstructionsSeen?: boolean;
+  timerRoundCompleted?: boolean;
 }
 
 interface GameStoreState {
@@ -81,6 +82,10 @@ interface GameStoreState {
   clearToast: () => void;
 }
 
+type PersistedGameState = Omit<Partial<Pick<GameStoreState,
+  'selectedGameMode' | 'user' | 'consents' | 'settings' | 'highScore' | 'highestLevel' | 'rewards'
+>>, 'settings'> & { settings?: Partial<UserSettings> };
+
 const DEFAULT_GAME_MODE: GameMode = SHOW_PICTURE_MATCH ? 'picture-match' : 'target-timer';
 
 const initialRunState: GameRunState = {
@@ -96,7 +101,7 @@ const initialRunState: GameRunState = {
 };
 
 export const useGameStore = create<GameStoreState>()(
-  persist(
+  persist<GameStoreState, [], [], PersistedGameState>(
     (set, get) => ({
       kioskPlayer: null,
       setKioskPlayer: (player) => set({ kioskPlayer: player }),
@@ -376,15 +381,32 @@ export const useGameStore = create<GameStoreState>()(
     {
       name: 'ppm_wine_event_storage',
       storage: createJSONStorage(() => localStorage),
+      version: 1,
+      migrate: (persisted, version) => {
+        if (version !== 0 || !persisted || typeof persisted !== 'object' || Array.isArray(persisted)) {
+          throw new Error('Cannot migrate saved event data.');
+        }
+        const saved = persisted as PersistedGameState;
+        if (saved.settings !== undefined && (
+          saved.settings === null || typeof saved.settings !== 'object' || Array.isArray(saved.settings)
+        )) {
+          throw new Error('Cannot migrate invalid event settings.');
+        }
+        return {
+          ...saved,
+          settings: saved.settings ? migrateLegacyTimerDefaults(saved.settings) : saved.settings,
+        };
+      },
       merge: (persisted, current) => {
-        const saved = persisted as Partial<GameStoreState> | undefined;
+        const saved = persisted as PersistedGameState | undefined;
         const selectedGameMode =
           !SHOW_PICTURE_MATCH && saved?.selectedGameMode === 'picture-match'
             ? 'target-timer'
             : (saved?.selectedGameMode ?? current.selectedGameMode);
         return { ...current, ...saved, selectedGameMode, settings: normalizeSettings(saved?.settings ?? {}) };
       },
-      onRehydrateStorage: () => (state) => {
+      onRehydrateStorage: () => (state, error) => {
+        if (error) console.error('Unable to restore saved event data:', error);
         if (state?.settings) {
           soundManager.updateSettings(state.settings);
           haptics.setEnabled(state.settings.haptics);

@@ -4,6 +4,7 @@ export const EVENT_NAME =
   import.meta.env?.VITE_EVENT_NAME || 'The 23rd Grand Wine Experience';
 
 export const TIMER_GAME_NAME = 'The Perfect 23';
+export const DEFAULT_TIMER_TARGET = 23;
 
 export const SHOW_PICTURE_MATCH = false;
 
@@ -31,9 +32,10 @@ export const DEFAULT_SETTINGS: UserSettings = {
   language: 'en',
   difficulty: 'normal',
   timerTargetMode: 'fixed',
-  timerCustomTarget: 23,
-  timerWinMin: 22.34,
-  timerWinMax: 23.99,
+  timerCustomTarget: DEFAULT_TIMER_TARGET,
+  timerWinMin: DEFAULT_TIMER_TARGET,
+  timerWinMax: DEFAULT_TIMER_TARGET,
+  allowTimerReplay: false,
   pictureSpeed: 1,
   pictureMatchMode: 'multi',
   requirePlayerName: false,

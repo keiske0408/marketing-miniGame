@@ -4122,6 +4122,7 @@ html[data-design-tint] :is(.event-page, .stop-clock-play) { background-blend-mod
 .event-scene { width: min(1032px, 100%); min-height: 100dvh; margin-inline: auto; }
 .event-registration { padding: clamp(40px, 13.56vw, 140px) clamp(24px, 14.53vw, 150px) clamp(60px, 15vw, 155px); }
 .event-registration-heading { margin: clamp(48px, 11.24vw, 116px) 0 28px; font-size: clamp(28px, 5.04vw, 52px); font-weight: 800; line-height: 1.08; text-align: center; text-transform: uppercase; }
+.event-registration-intro { margin: -10px 0 28px; font-size: clamp(16px, 2.4vw, 24px); text-align: center; }
 .event-registration-fields { display: grid; gap: clamp(20px, 3.68vw, 38px); }
 .event-input { width: 100%; min-height: clamp(60px, 9.5vw, 98px); padding: 12px clamp(22px, 3.88vw, 40px); border: 0; border-radius: 18px; background: #fff url('./assets/wine_game_UI/SCREEN 1/bar 1.png') center / 100% 100% no-repeat; color: #28225e; font-size: clamp(20px, 3.1vw, 32px); line-height: 1.2; }
 .event-input::placeholder { color: #777; opacity: 1; }
@@ -4145,6 +4146,17 @@ html[data-design-tint] :is(.event-page, .stop-clock-play) { background-blend-mod
 .stop-clock-scene > .event-brand { position: absolute; top: 3.7%; left: 16.5%; width: 61.6%; }
 .stop-clock-readout { position: absolute; top: 18.4%; left: 0; width: 100%; color: #fff; font-size: 7.5cqw; font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; text-align: center; text-shadow: 0 0 2.4cqw #bba2ff66; }
 .stop-clock-readout > b { font-weight: 700; }
+.stop-clock-masked { isolation: isolate; pointer-events: none; user-select: none; animation: stop-clock-signal-in .65s ease-out both; }
+.stop-clock-scramble { position: relative; display: inline-block; padding-inline: .12em; color: #e6deff; font-variant-numeric: tabular-nums; letter-spacing: .03em; text-shadow: 0 0 1.8cqw #bba2ffaa; filter: blur(max(6px, .95cqw)); opacity: .9; animation: stop-clock-signal-blur 2.2s ease-in-out infinite; }
+.stop-clock-scramble::before, .stop-clock-scramble::after { content: attr(data-echo); position: absolute; inset: 0; padding: inherit; opacity: .7; animation: stop-clock-signal-tear 4.8s steps(1, end) infinite; }
+.stop-clock-scramble::before { color: #9af4ef; clip-path: inset(14% 0 58%); translate: -.6cqw 0; }
+.stop-clock-scramble::after { color: #eea8db; clip-path: inset(58% 0 16%); translate: .6cqw 0; animation-direction: reverse; animation-delay: -1.7s; }
+.stop-clock-interference { position: absolute; inset: 0; width: 39cqw; margin-inline: auto; overflow: hidden; border-radius: 1cqw; background: repeating-linear-gradient(0deg, transparent 0 3px, #bba2ff20 3px 4px), radial-gradient(ellipse, #bba2ff1c, transparent 72%); opacity: .65; }
+.stop-clock-interference::after { content: ''; position: absolute; inset: -30% 0 auto; height: 25%; background: linear-gradient(transparent, #c3f4ff55, transparent); animation: stop-clock-signal-scan 3.4s linear infinite; }
+@keyframes stop-clock-signal-in { from { opacity: .35; filter: blur(.2cqw); } to { opacity: 1; filter: blur(0); } }
+@keyframes stop-clock-signal-blur { 0%, 100% { filter: blur(max(6px, .95cqw)); } 50% { filter: blur(max(7px, 1.2cqw)); } }
+@keyframes stop-clock-signal-tear { 0%, 74%, 85%, 100% { transform: translateX(0); } 76%, 82% { transform: translateX(.6cqw); } 79% { transform: translateX(-.5cqw); } }
+@keyframes stop-clock-signal-scan { to { transform: translateY(650%); } }
 .stop-clock-target { position: absolute; z-index: 1; top: 24.7%; left: 50%; display: flex; align-items: baseline; gap: .55em; margin: 0; padding: .35em 1.1em; border: max(2px, .3cqw) solid var(--event-gold); border-radius: 999px; background: linear-gradient(180deg, var(--event-panel), #120a3a); box-shadow: 0 0 2.2cqw #e8cf5955, inset 0 0 1cqw #e8cf5933; color: var(--event-yellow); font-size: max(13px, 2.3cqw); white-space: nowrap; transform: translateX(-50%); }
 .stop-clock-target > span { font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
 .stop-clock-target > strong { color: #fff; font-size: 1.25em; font-variant-numeric: tabular-nums; }
@@ -4156,13 +4168,51 @@ html[data-design-tint] :is(.event-page, .stop-clock-play) { background-blend-mod
 .stop-clock-target-line::before, .stop-clock-target-line::after { content: ''; position: absolute; top: 50%; width: max(9px, 1.4cqw); aspect-ratio: 1; border-radius: 2px; background: var(--event-yellow); transform: translate(-50%, -50%) rotate(45deg); }
 .stop-clock-target-line::before { left: 0; }
 .stop-clock-target-line::after { left: 100%; }
-.stop-clock-sparkles { position: absolute; inset: 14% 4% 46%; opacity: 0; transition: opacity .3s; }
-.stop-clock-sparkles > i { position: absolute; bottom: 0; width: max(6px, 1.1cqw); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, #fff 0 25%, #ffe994 45%, transparent 70%); animation: stop-clock-sparkle 2.4s ease-in infinite; }
+.stop-clock-wine-fizz { position: absolute; inset: 0; overflow: hidden; pointer-events: none; -webkit-mask: var(--wine-mask) center / 100% 100% no-repeat; mask: var(--wine-mask) center / 100% 100% no-repeat; clip-path: inset(calc(54.6% - var(--wine-fill, 0) * 40.35%) 0 0 0); }
+.stop-clock-wine-fizz { --fizz-edge: #ede9e8; --fizz-glow: #e18b2fcc; --fizz-core: #e18b2f; }
+.stop-clock-wine-fizz.is-hulma { --fizz-edge: #f8fbf6; --fizz-glow: #3d73adee; --fizz-core: #ff8d06; }
+.stop-clock-sparkles { position: absolute; inset: 14% 20% 45.4%; opacity: 0; transition: opacity .3s; }
+.stop-clock-sparkles > i { position: absolute; bottom: 0; width: max(5px, .9cqw); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, #fff 0 25%, var(--fizz-core) 45%, transparent 70%); animation: stop-clock-sparkle 2.4s ease-in infinite; }
 .stop-clock-sparkles > i:nth-child(1) { left: 6%; animation-delay: 0s; }
 .stop-clock-sparkles > i:nth-child(2) { left: 26%; animation-delay: .9s; }
 .stop-clock-sparkles > i:nth-child(3) { left: 50%; animation-delay: .4s; }
 .stop-clock-sparkles > i:nth-child(4) { left: 74%; animation-delay: 1.5s; }
 .stop-clock-sparkles > i:nth-child(5) { left: 92%; animation-delay: 1.1s; }
+/* GVE brand: Red Visions, Bridge Happy, Simple Bliss, Stable Slate. HULMA brand: Blue, Perspective Orange, Foundation Gray, Fresh White. */
+.stop-clock-message-bubbles { position: absolute; z-index: 2; inset: 13% 0 44%; pointer-events: none; font-family: Gilmer, var(--font-body); }
+.stop-clock-message-bubble { position: absolute; z-index: 1; top: 0; left: 50%; display: flex; align-items: center; gap: 1.6cqw; width: 74%; padding: 1.2cqw 2.6cqw 1.2cqw 1.2cqw; border: max(2px, .25cqw) solid #e18b2f; border-radius: 999px; background: radial-gradient(ellipse at 18% 0, #fff, transparent 60%), linear-gradient(135deg, #fbf9f8, #ede9e8 58%, #e2d9d6); box-shadow: inset 0 -3px 0 #c9352b22, 0 10px 22px #10082766, 0 0 2.6cqw #e18b2f77; color: #242428; transform: translateX(-50%); animation: stop-clock-message-arrive .5s cubic-bezier(.16, 1, .3, 1) both, stop-clock-message-hover 3.6s ease-in-out .5s infinite; }
+/* Concentric arcs echo the swooshes in the GVE mark. */
+.stop-clock-message-bubble::before { content: ''; position: absolute; top: 50%; right: -1.2cqw; width: 7cqw; aspect-ratio: 1; border: max(2px, .35cqw) solid transparent; border-top-color: #c9352b; border-right-color: #e18b2f; border-radius: 50%; translate: 0 -50%; rotate: 20deg; opacity: .9; pointer-events: none; }
+.stop-clock-message-bubble::after { content: ''; position: absolute; top: -1px; left: 16%; width: 46%; height: max(3px, .35cqw); border-radius: 999px; background: linear-gradient(90deg, transparent, #c9352b, #e18b2f, transparent); }
+.stop-clock-message-emblem { position: relative; display: grid; place-items: center; flex-shrink: 0; width: 6.4cqw; aspect-ratio: 1; border: max(2px, .25cqw) solid #e18b2f; border-radius: 50%; background: #fff; box-shadow: 0 0 0 max(2px, .3cqw) #c9352b33, 0 4px 10px #24242833; }
+.stop-clock-message-emblem img { width: 70%; height: 70%; object-fit: contain; }
+.stop-clock-message-copy { position: relative; display: grid; flex: 1; min-width: 0; gap: .4cqw; text-align: left; }
+.stop-clock-message-copy strong { color: #c9352b; font-size: clamp(12px, 2.4cqw, 26px); font-weight: 800; line-height: 1.12; letter-spacing: .01em; text-wrap: balance; }
+.stop-clock-message-copy small { color: #242428; font-size: max(10px, 1.4cqw); font-weight: 700; line-height: 1.2; }
+.stop-clock-message-stars { position: absolute; top: max(-8px, -.8cqw); right: 18%; display: flex; align-items: center; gap: 5px; }
+.stop-clock-message-stars i { width: max(6px, .7cqw); aspect-ratio: 1; border-radius: 50%; background: #e18b2f; box-shadow: 0 0 8px #e18b2f99; }
+.stop-clock-message-stars i:nth-child(2) { width: max(9px, 1cqw); background: #c9352b; }
+.stop-clock-message-stars i:nth-child(3) { background: #242428; }
+.stop-clock-message-bubbles.is-hulma { font-family: Kanit, var(--font-body); }
+.is-hulma .stop-clock-message-bubble { border-color: #3d73ad; border-radius: 1.4cqw; background: repeating-conic-gradient(from 270deg at 100% 100%, #f8fbf61c 0 .35deg, transparent .35deg 5deg), linear-gradient(135deg, #34313a, #26242a 65%); box-shadow: inset 0 -3px 0 #ff8d06, 0 10px 22px #0a081466, 0 0 2.6cqw #3d73ad88; color: #f8fbf6; }
+/* Orange ring from the HULMA pattern. */
+.is-hulma .stop-clock-message-bubble::before { top: -2.4cqw; right: 3cqw; width: 5cqw; border: max(1.5px, .2cqw) solid #ff8d06; translate: none; rotate: none; }
+.is-hulma .stop-clock-message-bubble::after { left: 1.2cqw; width: 30%; background: linear-gradient(90deg, #3d73ad, #ff8d06); }
+.is-hulma .stop-clock-message-emblem { border: 0; border-radius: .9cqw; background: linear-gradient(#f8fbf62e 1px, transparent 1px) 0 0 / 22% 22%, linear-gradient(90deg, #f8fbf62e 1px, transparent 1px) 0 0 / 22% 22%, #3d73ad; box-shadow: 0 0 0 max(2px, .25cqw) #f8fbf633, 0 4px 10px #0006; }
+.is-hulma .stop-clock-message-emblem img { width: 66%; height: 66%; }
+.is-hulma .stop-clock-message-copy strong { color: #f8fbf6; font-weight: 700; letter-spacing: .02em; }
+.is-hulma .stop-clock-message-copy small { color: #ff8d06; font-weight: 500; }
+.is-hulma .stop-clock-message-stars { display: none; }
+.stop-clock-message-trail { position: absolute; inset: 14% 19% 45.4%; }
+.stop-clock-message-trail i { position: absolute; bottom: -4%; left: 12%; width: 3cqw; aspect-ratio: 1; border: max(1.5px, .2cqw) solid var(--fizz-edge); border-radius: 50%; background: radial-gradient(circle at 30% 26%, #fff 0 14%, #ffffff66 26%, var(--fizz-glow) 72%, var(--fizz-edge) 100%); box-shadow: 0 0 10px var(--fizz-glow), inset 0 0 4px #fff8; animation: stop-clock-message-rise 4.2s ease-in infinite; }
+.stop-clock-message-trail i:nth-child(2) { left: 82%; width: 2cqw; animation-delay: -1s; }
+.stop-clock-message-trail i:nth-child(3) { left: 30%; width: 1.5cqw; animation-delay: -2.6s; }
+.stop-clock-message-trail i:nth-child(4) { left: 68%; width: 3.6cqw; animation-delay: -3.4s; animation-duration: 5s; }
+.stop-clock-message-trail i:nth-child(5) { left: 47%; width: 2.3cqw; animation-delay: -1.8s; }
+.stop-clock-message-trail i:nth-child(6) { left: 4%; width: 1.7cqw; animation-delay: -3.8s; }
+.stop-clock-message-trail i:nth-child(7) { left: 90%; width: 1.3cqw; animation-delay: -.4s; }
+.stop-clock-message-trail i:nth-child(8) { left: 58%; width: 1.6cqw; animation-delay: -2.2s; animation-duration: 3.6s; }
+.stop-clock-message-trail i:nth-child(9) { left: 20%; width: 2.6cqw; animation-delay: -.9s; animation-duration: 4.8s; }
 .stop-clock-scene.is-running .stop-clock-sparkles { opacity: 1; }
 .stop-clock-scene.is-running .stop-clock-action { animation: stop-clock-pulse 1.1s ease-in-out infinite; }
 .stop-clock-scene.is-won .stop-clock-readout { color: var(--event-yellow); animation: stop-clock-pop .6s ease-out; }
@@ -4170,10 +4220,13 @@ html[data-design-tint] :is(.event-page, .stop-clock-play) { background-blend-mod
 .stop-clock-scene.is-missed .stop-clock-readout { animation: stop-clock-shake .45s ease-in-out; }
 @keyframes stop-clock-target-glow { 50% { box-shadow: 0 0 3cqw var(--event-yellow), 0 0 .6cqw #fff; } }
 @keyframes stop-clock-sparkle { 0% { opacity: 0; transform: translateY(0) scale(.4); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-38cqw) scale(1.1); } }
+@keyframes stop-clock-message-rise { 0% { opacity: 0; transform: translate(0, 0) scale(.5); } 10%, 80% { opacity: .95; } 100% { opacity: 0; transform: translate(1.2cqw, -44cqw) scale(1.15); } }
+@keyframes stop-clock-message-arrive { from { opacity: 0; scale: .86; } to { opacity: 1; scale: 1; } }
+@keyframes stop-clock-message-hover { 50% { translate: 0 min(.6cqw, 4px); } }
 @keyframes stop-clock-pulse { 50% { filter: drop-shadow(0 0 2cqw #ffe994cc) brightness(1.08); scale: 1.04; } }
 @keyframes stop-clock-pop { 0% { scale: 1; } 40% { scale: 1.12; } 100% { scale: 1; } }
 @keyframes stop-clock-shake { 20%, 60% { translate: -1.2cqw 0; } 40%, 80% { translate: 1.2cqw 0; } }
-.stop-clock-action { position: absolute; top: 35%; left: 26.9%; width: 46.5%; aspect-ratio: 398 / 140; padding: 0; border: 0; border-radius: 999px; background: var(--event-yellow); box-shadow: inset 0 0 0 4px var(--event-wine); color: var(--event-wine); font-size: 6cqw; font-weight: 800; line-height: 1; cursor: pointer; pointer-events: auto; }
+.stop-clock-action { position: absolute; z-index: 3; top: 35%; left: 26.9%; width: 46.5%; aspect-ratio: 398 / 140; padding: 0; border: 0; border-radius: 999px; background: var(--event-yellow); box-shadow: inset 0 0 0 4px var(--event-wine); color: var(--event-wine); font-size: 6cqw; font-weight: 800; line-height: 1; cursor: pointer; pointer-events: auto; }
 .stop-clock-action > img { display: block; width: 100%; height: auto; }
 .stop-clock-action:disabled { cursor: default; }
 .stop-clock-round-info { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 16px 28px; width: min(1032px, 100%); margin-inline: auto; padding: 24px 32px 0; font-size: 17px; }
@@ -4195,33 +4248,46 @@ html[data-design-tint] :is(.event-page, .stop-clock-play) { background-blend-mod
 .stop-clock-leaderboard .leaderboard-view-all { color: var(--event-yellow); font-size: 17px; }
 .stop-clock-footer { padding: 24px; text-align: center; }
 .stop-clock-instructions-overlay { padding: 126px 40px 100px; }
-.stop-clock-instructions { position: relative; display: flex; flex-direction: column; height: min(950px, calc(100dvh - 226px)); max-height: calc(100dvh - 226px); padding: 96px 78px 46px; overflow: visible; text-align: center; }
-.stop-clock-instructions .modal-header { justify-content: center; margin: 0 0 82px; padding: 0; }
-.stop-clock-instructions .modal-header h2 { font-size: clamp(32px, 6.78vw, 70px); line-height: 1; text-transform: uppercase; text-shadow: 7px 8px #17134e; }
+.stop-clock-instructions { position: relative; display: flex; flex-direction: column; height: auto; max-height: calc(100dvh - 226px); padding: 48px 56px 36px; overflow: visible; text-align: center; }
+.stop-clock-instructions .modal-header { justify-content: center; margin: 0 0 20px; padding: 0; }
+.stop-clock-instructions .modal-header h2 { font-size: clamp(28px, 4.2vw, 44px); line-height: 1.08; text-transform: uppercase; text-shadow: 5px 5px #17134e; }
 .stop-clock-instructions .modal-close-btn { position: absolute; top: -82px; right: -74px; width: 102px; height: 102px; min-width: 0; min-height: 0; padding: 0; border-radius: 50%; background: url('./assets/wine_game_UI/SCREEN 2/how to play pop up.png') right top / 790.2% 1040.2% no-repeat; }
 .stop-clock-instructions .modal-close-btn > svg { visibility: hidden; }
 .stop-clock-instructions .modal-body { min-height: 0; overflow-y: auto; }
-.stop-clock-steps { display: grid; gap: 64px; margin: 0 0 0 48px; padding: 10px 0; list-style: none; text-align: left; }
-.stop-clock-steps li { display: flex; align-items: flex-start; gap: 28px; }
-.stop-clock-steps li > span { display: grid; place-items: center; flex-shrink: 0; width: 66px; height: 66px; border-radius: 50%; background: #fff; color: #4331e7; font-size: 48px; font-weight: 800; }
-.stop-clock-steps p { margin: 4px 0 0; font-size: clamp(26px, 4.46vw, 46px); font-weight: 700; line-height: 1.35; }
-.stop-clock-steps strong { font-weight: inherit; }
-.stop-clock-instructions .modal-actions { display: block; margin-top: auto; padding-top: 68px; }
+.stop-clock-how-title { margin: 0 0 18px; color: var(--event-yellow); font-size: clamp(18px, 2.4vw, 24px); }
+.stop-clock-steps { display: grid; gap: 20px; margin: 0; padding: 8px 0; list-style: none; text-align: left; }
+.stop-clock-steps li { display: flex; align-items: flex-start; gap: 16px; }
+.stop-clock-steps li > span { display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; background: #fff; color: #4331e7; font-size: 32px; font-weight: 800; }
+.stop-clock-steps p { margin: 0; font-size: clamp(16px, 2.1vw, 22px); font-weight: 400; line-height: 1.35; }
+.stop-clock-steps .stop-clock-step-title { display: block; margin-bottom: 3px; font-weight: 800; }
+.event-dialog .stop-clock-instructions-note { margin: 18px 0 0; color: var(--event-yellow); font-size: clamp(15px, 1.8vw, 18px); }
+.stop-clock-instructions .modal-actions { display: block; margin-top: auto; padding-top: 24px; }
 .stop-clock-instructions .event-art-button { width: 100%; }
 .stop-clock-overlay { padding: min(13.8vh, 190px) 20px 40px; place-items: start center; }
-.stop-clock-result { padding: 38px 36px 28px; text-align: center; }
-.stop-clock-result .modal-header { flex-direction: column; gap: 20px; margin: 0; padding: 0; }
-.stop-clock-result .modal-header h2 { font-size: clamp(30px, 6.5vw, 67px); line-height: 1.08; text-transform: uppercase; text-shadow: 6px 7px #17134e; }
-.stop-clock-result-art { display: block; width: 100px; height: 115px; }
-.stop-clock-result-art.is-win { width: min(440px, 70%); height: auto; aspect-ratio: 440 / 140; }
-.stop-clock-result .game-result-summary { gap: 24px; padding: 32px 0 28px; }
-.stop-clock-result .game-result-summary > span { color: var(--event-gold); font-size: clamp(23px, 3.49vw, 36px); font-weight: 700; text-transform: uppercase; }
-.stop-clock-result .game-result-summary > strong { color: #fff; font: 800 clamp(44px, 5.82vw, 60px)/1.1 Arial, Helvetica, sans-serif; font-variant-numeric: tabular-nums; }
-.stop-clock-winner { width: 100%; margin: 8px auto 28px; padding: 16px; border: 3px solid var(--event-gold); border-radius: 18px; background: var(--event-wine); font-size: 32px; font-weight: 800; }
+.stop-clock-result { max-height: calc(100dvh - min(13.8vh, 190px) - 40px); padding: 34px 36px 28px; text-align: center; }
+.stop-clock-result .modal-header { flex-direction: column; gap: 10px; margin: 0; padding: 0; }
+.stop-clock-result .modal-header h2 { font-size: clamp(25px, 4.2vw, 48px); line-height: 1.08; text-transform: uppercase; text-shadow: 4px 5px #17134e; }
+.stop-clock-result-art { display: block; width: 64px; height: 74px; }
+.stop-clock-result-art.is-win { width: min(230px, 52%); height: auto; aspect-ratio: 440 / 140; }
+.stop-clock-result .modal-body { position: relative; isolation: isolate; }
+.stop-clock-result .modal-body > :not(.stop-clock-celebration) { position: relative; z-index: 1; }
+.stop-clock-celebration { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; }
+.stop-clock-celebration i { position: absolute; top: -20px; width: 8px; height: 14px; border-radius: 2px; background: #f5d276; box-shadow: 0 0 8px #ffe994; animation: stop-clock-confetti-fall 3.5s linear infinite; }
+.stop-clock-celebration i:nth-child(3n) { width: 10px; height: 10px; border-radius: 50%; background: #fff4bb; }
+.stop-clock-celebration.is-miss i { top: auto; bottom: -20px; width: 10px; height: 10px; border-radius: 50%; background: #ffdda0; animation-name: stop-clock-result-bubble; }
+@keyframes stop-clock-confetti-fall { 0% { opacity: 0; transform: translateY(0) rotate(0); } 10%, 80% { opacity: .85; } 100% { opacity: 0; transform: translateY(60dvh) rotate(450deg); } }
+@keyframes stop-clock-result-bubble { 0% { opacity: 0; transform: translateY(0) scale(.7); } 15%, 80% { opacity: .7; } 100% { opacity: 0; transform: translateY(-45dvh) scale(1.2); } }
+@keyframes stop-clock-result-glow { 50% { filter: drop-shadow(0 0 20px #ffe994); } }
+.stop-clock-result .game-result-summary { gap: 10px; padding: 16px 0; }
+.stop-clock-result-glass { display: block; width: clamp(68px, 11vw, 120px); max-height: 120px; object-fit: contain; filter: drop-shadow(0 0 12px #ffe99499); animation: stop-clock-result-glow 2s ease-in-out infinite; }
+.stop-clock-result .game-result-summary > span { color: var(--event-gold); font-size: clamp(18px, 2.6vw, 27px); font-weight: 700; text-transform: uppercase; }
+.stop-clock-result .game-result-summary > strong { color: #fff; font: 800 clamp(40px, 5.2vw, 54px)/1.1 Arial, Helvetica, sans-serif; font-variant-numeric: tabular-nums; }
+.stop-clock-winner { width: min(440px, 100%); margin: 4px auto 16px; padding: 16px; border: 3px solid var(--event-gold); border-radius: 18px; background: var(--event-wine); font-size: 32px; font-weight: 800; }
 .stop-clock-winner:has(> img) { padding: 0; border: 0; border-radius: 0; background: transparent; }
 .stop-clock-winner > img { display: block; width: 100%; height: auto; }
-.event-dialog .stop-clock-result-message { margin: 36px 0; font-size: clamp(18px, 2.71vw, 28px); line-height: 1.4; }
-.stop-clock-result .modal-actions { gap: 12px; margin-top: 28px; }
+.event-dialog .stop-clock-result-message { margin: 10px 0; font-size: clamp(16px, 2.1vw, 22px); line-height: 1.35; }
+.event-dialog .stop-clock-redemption { color: var(--event-yellow); font-weight: 700; }
+.stop-clock-result .modal-actions { gap: 10px; margin-top: 20px; }
 .stop-clock-result .modal-actions .result-primary { border: 3px solid var(--event-gold); border-radius: 16px; background: linear-gradient(#df4c36 0, #9b2827 10%, #631c23 24%); color: #fff; font: 800 24px Arial, Helvetica, sans-serif; box-shadow: none; }
 .stop-clock-result .modal-actions .privacy-details-link { color: #fff; font-family: inherit; font-size: 17px; }
 
@@ -4229,6 +4295,11 @@ html[data-design-tint] :is(.event-page, .stop-clock-play) { background-blend-mod
   .event-game-card:hover { background: var(--event-card-hover); }
   .event-link-button:hover { background: #ffffff12; }
   .event-button:hover:not(:disabled) { filter: brightness(1.08); }
+}
+
+@media (max-height: 1100px), (max-width: 680px) {
+  .stop-clock-overlay { padding: 24px 20px; place-items: center; }
+  .stop-clock-result { max-height: calc(100dvh - 48px); }
 }
 
 @media (max-width: 680px) {
@@ -4250,6 +4321,11 @@ html[data-design-tint] :is(.event-page, .stop-clock-play) { background-blend-mod
   .event-registration-submit { width: 100%; }
   .event-dialog { border-radius: 28px; border-width: 3px; }
   .stop-clock-action { min-height: 56px; width: max(48.4%, 160px); left: 50%; transform: translateX(-50%); font-size: max(6cqw, 28px); }
+  .stop-clock-message-bubble { top: max(0px, calc(37px - 7cqw)); width: 96%; gap: 8px; padding: 7px 10px; border-radius: 20px; }
+  .stop-clock-message-emblem { width: 30px; }
+  .stop-clock-message-copy { gap: 3px; }
+  .stop-clock-message-copy strong { font-size: clamp(12px, 2.2cqw, 16px); }
+  .stop-clock-message-copy small { font-size: max(10px, 1.35cqw); }
   .stop-clock-round-info { padding: 20px 20px 0; font-size: 16px; gap: 16px; }
   .stop-clock-leaderboard { width: calc(100% - 40px); padding: 20px; }
   .stop-clock-leaderboard li { font-size: 15px; }
@@ -4257,41 +4333,43 @@ html[data-design-tint] :is(.event-page, .stop-clock-play) { background-blend-mod
   .stop-clock-instructions { height: auto; max-height: calc(100dvh - 94px); padding: 40px 24px 28px; }
   .stop-clock-instructions .modal-header { margin-bottom: 28px; }
   .stop-clock-instructions .modal-close-btn { top: -58px; right: 0; width: 60px; height: 60px; }
-  .stop-clock-steps { gap: 28px; margin-left: 0; }
-  .stop-clock-steps li { gap: 16px; }
-  .stop-clock-steps li > span { width: 42px; height: 42px; font-size: 30px; }
-  .stop-clock-steps p { font-size: 24px; }
-  .stop-clock-instructions .modal-actions { padding-top: 32px; }
-  .stop-clock-result { padding: 28px 20px 20px; }
-  .stop-clock-overlay { padding: 24px 20px; place-items: center; }
-  .stop-clock-result .modal-header h2 { font-size: clamp(24px, 6.4vw, 42px); }
-  .stop-clock-result-art { width: 72px; height: 83px; }
-  .stop-clock-result .game-result-summary { gap: 16px; padding: 24px 0; }
-  .event-dialog .stop-clock-result-message { margin: 24px 0; }
-  .stop-clock-result .result-primary { font-size: 20px; }
-  .stop-clock-result .game-result-summary > span { font-size: 22px; }
+  .stop-clock-steps { gap: 18px; }
+  .stop-clock-steps li > span { width: 38px; height: 38px; font-size: 26px; }
+  .stop-clock-steps p { font-size: 16px; }
+  .stop-clock-instructions .modal-actions { padding-top: 20px; }
+  .stop-clock-result { padding: 18px 20px 14px; }
+  .stop-clock-result .modal-header h2 { font-size: clamp(24px, 6.4vw, 32px); }
+  .stop-clock-result-art { width: 58px; height: 67px; }
+  .stop-clock-result-art.is-win { width: min(190px, 42%); }
+  .stop-clock-result .game-result-summary { gap: 6px; padding: 8px 0; }
+  .stop-clock-result-glass { width: 56px; }
+  .stop-clock-winner { margin-bottom: 10px; padding: 8px; font-size: 24px; }
+  .event-dialog .stop-clock-result-message { margin: 6px 0; line-height: 1.28; }
+  .stop-clock-result .modal-actions { gap: 4px; margin-top: 12px; }
+  .stop-clock-result .modal-actions .result-primary { padding: 12px 10px; font-size: 20px; }
+  .stop-clock-result .game-result-summary > span { font-size: 18px; }
 }
 
 @media (max-height: 800px) and (min-width: 681px) {
   .stop-clock-instructions-overlay { padding: 70px 40px 24px; }
   .stop-clock-instructions { height: auto; max-height: calc(100dvh - 94px); padding: 32px 56px; }
   .stop-clock-instructions .modal-header { margin-bottom: 24px; }
-  .stop-clock-instructions .modal-header h2 { font-size: 44px; }
+  .stop-clock-instructions .modal-header h2 { font-size: 36px; }
   .stop-clock-instructions .modal-close-btn { top: -62px; right: -32px; width: 70px; height: 70px; }
-  .stop-clock-steps { gap: 24px; }
-  .stop-clock-steps li > span { width: 48px; height: 48px; font-size: 34px; }
-  .stop-clock-steps p { font-size: 30px; }
+  .stop-clock-steps { gap: 16px; }
+  .stop-clock-steps li > span { width: 40px; height: 40px; font-size: 28px; }
+  .stop-clock-steps p { font-size: 18px; }
   .stop-clock-instructions .modal-actions { padding-top: 24px; }
 }
 
 @media (min-height: 801px) and (max-height: 1100px) and (min-width: 681px) {
-  .stop-clock-instructions { padding: 64px 78px 40px; }
-  .stop-clock-instructions .modal-header { margin-bottom: 40px; }
-  .stop-clock-instructions .modal-header h2 { font-size: 56px; }
-  .stop-clock-steps { gap: 36px; }
-  .stop-clock-steps li > span { width: 48px; height: 48px; font-size: 34px; }
-  .stop-clock-steps p { font-size: 32px; }
-  .stop-clock-instructions .modal-actions { padding-top: 40px; }
+  .stop-clock-instructions { padding: 40px 56px 32px; }
+  .stop-clock-instructions .modal-header { margin-bottom: 20px; }
+  .stop-clock-instructions .modal-header h2 { font-size: 42px; }
+  .stop-clock-steps { gap: 20px; }
+  .stop-clock-steps li > span { width: 48px; height: 48px; font-size: 32px; }
+  .stop-clock-steps p { font-size: 20px; }
+  .stop-clock-instructions .modal-actions { padding-top: 24px; }
 }
 
 @media (min-width: 681px) and (max-width: 900px) {
@@ -4310,16 +4388,29 @@ html[data-design-tint] :is(.event-page, .stop-clock-play) { background-blend-mod
   .stop-clock-instructions .event-button { min-height: 56px; }
 }
 
+@media (max-width: 360px) {
+  .stop-clock-message-bubble { padding: 5px 8px; }
+  .stop-clock-message-emblem { display: none; }
+  .stop-clock-message-copy { text-align: center; }
+  .stop-clock-action { top: 37%; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .event-lobby-star { animation: none; }
   .event-modal-overlay { animation: none; }
-  .stop-clock-scene *, .stop-clock-scene *::before { animation: none !important; }
+  .stop-clock-scene *, .stop-clock-scene *::before, .stop-clock-scene *::after { animation: none !important; }
   .stop-clock-sparkles { display: none; }
+  .stop-clock-message-trail, .stop-clock-celebration { display: none; }
+  .stop-clock-result-glass { animation: none; }
 }
 
 /* The in-app "Reduce motion" setting mirrors the OS preference for the event screens. */
 html[data-reduced-motion] .event-lobby-star,
 html[data-reduced-motion] .event-modal-overlay,
 html[data-reduced-motion] .stop-clock-scene *,
-html[data-reduced-motion] .stop-clock-scene *::before { animation: none !important; }
+html[data-reduced-motion] .stop-clock-scene *::before,
+html[data-reduced-motion] .stop-clock-scene *::after { animation: none !important; }
 html[data-reduced-motion] .stop-clock-sparkles { display: none; }
+html[data-reduced-motion] .stop-clock-message-trail,
+html[data-reduced-motion] .stop-clock-celebration { display: none; }
+html[data-reduced-motion] .stop-clock-result-glass { animation: none; }

@@ -43,6 +43,7 @@ export function PlayerConsentScreen() {
       <main className="event-scene event-registration">
         <EventBrand registration />
         <h1 className="event-registration-heading">{mode === 'target-timer' ? TIMER_GAME_NAME : 'Vintage Picture Match'}</h1>
+        {mode === 'target-timer' && <p className="event-registration-intro">{t('Welcome to The Perfect 23!')}</p>}
         <form className="event-registration-form" onSubmit={submit} aria-label={t('Player registration')}>
           <div className="event-registration-fields">
             <div>
@@ -119,8 +120,12 @@ export function PlayerConsentScreen() {
             className="event-button event-art-button event-registration-submit"
             disabled={!agreed}
           >
-            {settings.language === 'en' && <img src={letsPlay} alt="" />}
-            <span className={settings.language === 'en' ? 'event-sr-only' : undefined}>{t("Let's play")}</span>
+            {mode === 'target-timer' ? t("LET'S FILL YOUR CUP!") : (
+              <>
+                {settings.language === 'en' && <img src={letsPlay} alt="" />}
+                <span className={settings.language === 'en' ? 'event-sr-only' : undefined}>{t("Let's play")}</span>
+              </>
+            )}
           </button>
         </form>
       </main>

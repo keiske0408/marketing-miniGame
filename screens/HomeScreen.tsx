@@ -13,7 +13,7 @@ export function HomeScreen() {
   const navigate = useNavigate();
   const setGameMode = useGameStore((state) => state.setGameMode);
   const settings = useGameStore((state) => state.settings);
-  const target = timerRules(settings).target;
+  const rules = timerRules(settings);
   const selectGame = (mode: GameMode) => {
     setGameMode(mode);
     navigate('/game');
@@ -62,7 +62,9 @@ export function HomeScreen() {
                 <ArrowRight className="card-arrow" aria-hidden="true" />
               </div>
               <p className="card-description">
-                {t('The challenge: Participants must stop a running timer as close as possible to')} {target.toFixed(2)} {t('seconds to win a prize.')}
+                {rules.winMin === rules.winMax
+                  ? <>{t('Stop at exactly')} {rules.winMin.toFixed(2)} {t('seconds to win a prize.')}</>
+                  : <>{t('Stop between')} {rules.winMin.toFixed(2)}–{rules.winMax.toFixed(2)} {t('seconds to win a prize.')}</>}
               </p>
               <span className="event-card-action">{t('Select game')} <ArrowRight aria-hidden="true" /></span>
             </div>

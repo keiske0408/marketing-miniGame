@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS, DESIGN_COLORS } from '../config/constants';
+import { DEFAULT_SETTINGS, DEFAULT_TIMER_TARGET, DESIGN_COLORS } from '../config/constants';
 import type { UserSettings } from '../types';
 
 export interface TimerRules {
@@ -28,10 +28,25 @@ export function timerWon(result: TimerResult): boolean {
 
 export function timerRules(settings: UserSettings): TimerRules {
   return {
-    target: settings.timerTargetMode === 'fixed' ? settings.timerCustomTarget ?? 23 : 23,
-    winMin: settings.timerWinMin ?? 22.34,
-    winMax: settings.timerWinMax ?? 23.99,
+    target: settings.timerTargetMode === 'fixed' ? settings.timerCustomTarget ?? DEFAULT_TIMER_TARGET : DEFAULT_TIMER_TARGET,
+    winMin: settings.timerWinMin ?? DEFAULT_TIMER_TARGET,
+    winMax: settings.timerWinMax ?? DEFAULT_TIMER_TARGET,
   };
+}
+
+export function migrateLegacyTimerDefaults(saved: Partial<UserSettings>): Partial<UserSettings> {
+  const target = timerRules({ ...DEFAULT_SETTINGS, ...saved }).target;
+  if (target === DEFAULT_TIMER_TARGET && saved.timerWinMin === 22.34 && saved.timerWinMax === 23.99) {
+    return { ...saved, timerWinMin: DEFAULT_TIMER_TARGET, timerWinMax: DEFAULT_TIMER_TARGET };
+  }
+  return saved;
+}
+
+export function timerPresentation(seconds: number) {
+  return {
+    showClock: seconds < 20,
+    bubble: hundredths(seconds) < 1600 ? 'gve' : 'hulma',
+  } as const;
 }
 
 export function validTimerRules(rules: TimerRules): boolean {
@@ -70,6 +85,10 @@ export function normalizeSettings(saved: Partial<UserSettings>): UserSettings {
   }
   if (typeof settings.showLeaderboard !== 'boolean') settings.showLeaderboard = true;
   if (typeof settings.showGuidelines !== 'boolean') settings.showGuidelines = true;
+  if (typeof settings.allowTimerReplay !== 'boolean') {
+    console.warn('Invalid saved replay setting; disabling Play again.');
+    settings.allowTimerReplay = false;
+  }
   return settings;
 }
 

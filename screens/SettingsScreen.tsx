@@ -111,6 +111,9 @@ export function SettingsScreen() {
             {timerError && <p id="timer-settings-error" className="text-danger" role="alert">{t('Enter a target from 1 to 300 seconds and an ordered winning range from 0 to 300 seconds.')}</p>}
             <button type="submit" className="btn small-btn">{t(`Save ${TIMER_GAME_NAME} rules`)}</button>
           </form>
+          <Toggle label={t('Allow Play again')} checked={settings.allowTimerReplay === true}
+            description={t('When off, a new player registration is required after each completed game.')}
+            onChange={(allowTimerReplay) => updateSettings({ allowTimerReplay })} />
           {SHOW_PICTURE_MATCH && (
             <div className="picture-speed-setting">
               <div className="setting-row">

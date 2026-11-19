@@ -11,6 +11,8 @@ export function SelectedGameScreen() {
   const navigate = useNavigate();
   const mode = useGameStore((state) => state.selectedGameMode);
   const player = useGameStore((state) => state.kioskPlayer);
+  const allowTimerReplay = useGameStore((state) => state.settings.allowTimerReplay === true);
+  const canPlay = Boolean(player && (mode !== 'target-timer' || allowTimerReplay || !player.timerRoundCompleted));
   return (
     <main className="event-theme event-page">
       <div className="event-entry">
@@ -24,8 +26,8 @@ export function SelectedGameScreen() {
             <h1 className="event-heading">{mode === 'target-timer' ? TIMER_GAME_NAME : 'Vintage Picture Match'}</h1>
             <div className="event-selected-tags"><span><Gamepad2 aria-hidden="true" />{t('Solo challenge')}</span><span>{t(mode === 'target-timer' ? 'Perfect timing' : 'Find your match')}</span></div>
             <div className="event-menu-actions">
-              <button type="button" className="event-button event-play-button" onClick={() => navigate(player ? '/play' : '/player')}>
-                {player ? <Play aria-hidden="true" /> : <UserRoundPlus aria-hidden="true" />}<span><strong>{t(player ? "Let's play" : 'Register & play')}</strong>{player && <small>{t('Playing as')} {player.name}</small>}</span><ArrowRight aria-hidden="true" />
+              <button type="button" className="event-button event-play-button" onClick={() => navigate(canPlay ? '/play' : '/player')}>
+                {canPlay ? <Play aria-hidden="true" /> : <UserRoundPlus aria-hidden="true" />}<span><strong>{t(canPlay ? "Let's play" : 'Register & play')}</strong>{canPlay && player && <small>{t('Playing as')} {player.name}</small>}</span><ArrowRight aria-hidden="true" />
               </button>
               <button type="button" className="event-link-button" onClick={() => navigate('/avp')}><Clapperboard aria-hidden="true" />{t('Play AVP')}</button>
             </div>

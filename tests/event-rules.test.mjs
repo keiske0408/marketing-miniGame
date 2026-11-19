@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_SETTINGS } from '../config/constants.ts';
-import { designPalette, displayedSeconds, formatTimerClock, normalizeSettings, overlapPercentage, timerRules, timerWon, validTimerRules } from '../services/eventRules.ts';
+import { designPalette, displayedSeconds, formatTimerClock, migrateLegacyTimerDefaults, normalizeSettings, overlapPercentage, timerPresentation, timerRules, timerWon, validTimerRules } from '../services/eventRules.ts';
 import { appendEventScore, EVENT_SCORES_KEY, formatEventScore, isEventScore, rankScores, readEventScores } from '../services/eventScores.ts';
 
 const rules = { target: 23, winMin: 22.34, winMax: 23.99 };
+const exactRules = { target: 23, winMin: 23, winMax: 23 };
 const timer = (id, elapsed, target = 23, createdAt = 1) => ({
   id, name: 'Test player', createdAt, mode: 'target-timer', ...rules, target, elapsed,
 });
@@ -48,6 +49,35 @@ test('Time Stop winning boundaries are inclusive at displayed hundredths', () =>
   assert.equal(timerWon({ target: 3.25, winMin: 3.21, winMax: 3.29, elapsed: 3.25 }), true);
 });
 
+test('the default prize requires the displayed time to be exactly 23.00', () => {
+  for (const [elapsed, won] of [
+    [22.9949, false], [22.9951, true], [23, true],
+    [23.0049, true], [23.0051, false], [23.68, false],
+  ]) assert.equal(timerWon({ ...timerRules(DEFAULT_SETTINGS), elapsed }), won);
+});
+
+test('old timer defaults migrate without changing customized rules', () => {
+  const oldDefault = { ...DEFAULT_SETTINGS, timerWinMin: 22.34, timerWinMax: 23.99, language: 'tl' };
+  const migrated = migrateLegacyTimerDefaults(oldDefault);
+  assert.deepEqual(timerRules(normalizeSettings(migrated)), exactRules);
+  assert.equal(migrated.language, 'tl');
+  assert.equal(oldDefault.timerWinMin, 22.34);
+  for (const custom of [
+    { ...oldDefault, timerCustomTarget: 17 },
+    { ...oldDefault, timerWinMin: 22.35 },
+    { ...oldDefault, timerWinMax: 24 },
+  ]) assert.deepEqual(migrateLegacyTimerDefaults(custom), custom);
+});
+
+test('bubble messages follow displayed hundredths and the clock hides at 20 seconds', () => {
+  assert.deepEqual(timerPresentation(0), { showClock: true, bubble: 'gve' });
+  assert.deepEqual(timerPresentation(15.9949), { showClock: true, bubble: 'gve' });
+  assert.deepEqual(timerPresentation(15.9951), { showClock: true, bubble: 'hulma' });
+  assert.deepEqual(timerPresentation(19.999), { showClock: true, bubble: 'hulma' });
+  assert.deepEqual(timerPresentation(20), { showClock: false, bubble: 'hulma' });
+  assert.deepEqual(timerPresentation(75), { showClock: false, bubble: 'hulma' });
+});
+
 test('live clock formatting carries rounded hundredths into seconds and minutes', () => {
   for (const [seconds, clock] of [
     [0, '00:00.00'], [23, '00:23.00'], [23.9951, '00:24.00'],
@@ -60,15 +90,16 @@ test('settings preserve old preferences, gain defaults, and normalize invalid ru
   assert.equal(settings.language, 'tl');
   assert.equal(settings.muted, true);
   assert.equal(settings.pictureSpeed, 1);
-  assert.deepEqual(timerRules(settings), { ...rules, target: 17 });
-  assert.deepEqual(timerRules(DEFAULT_SETTINGS), rules);
+  assert.deepEqual(timerRules(settings), { ...exactRules, target: 17 });
+  assert.deepEqual(timerRules(DEFAULT_SETTINGS), exactRules);
+  assert.equal(settings.allowTimerReplay, false);
   assert.equal(normalizeSettings({ pictureSpeed: 3 }).pictureSpeed, 1);
   assert.equal(normalizeSettings({ pictureSpeed: 0.25 }).pictureSpeed, 0.25);
   assert.equal(normalizeSettings({ pictureSpeed: 2 }).pictureSpeed, 2);
   assert.equal(settings.pictureMatchMode, 'multi');
   assert.equal(normalizeSettings({ pictureMatchMode: 'single' }).pictureMatchMode, 'single');
   assert.equal(normalizeSettings({ pictureMatchMode: 'invalid' }).pictureMatchMode, 'multi');
-  assert.deepEqual(timerRules(normalizeSettings({ timerWinMin: 25, timerWinMax: 20 })), rules);
+  assert.deepEqual(timerRules(normalizeSettings({ timerWinMin: 25, timerWinMax: 20 })), exactRules);
 });
 
 test('design, guidelines, and leaderboard settings keep valid choices and repair invalid ones', () => {

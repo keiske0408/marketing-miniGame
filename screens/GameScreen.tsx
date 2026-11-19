@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ArrowLeft, Gamepad2, Trophy, UserRoundPlus } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { VintageWineMatch } from '../components/VintageWineMatch';
@@ -15,8 +15,11 @@ export function GameScreen() {
   const navigate = useNavigate();
   const player = useGameStore((state) => state.kioskPlayer);
   const setKioskPlayer = useGameStore((state) => state.setKioskPlayer);
+  const missingPlayerDestination = useRef('/player');
   const mode = useGameStore((state) => state.selectedGameMode);
   const settings = useGameStore((state) => state.settings);
+  const [timerEntryBlocked] = useState(() => mode === 'target-timer'
+    && Boolean(player?.timerRoundCompleted) && settings.allowTimerReplay !== true);
   const { scores, save, error } = useEventScores();
   const [currentScore, setCurrentScore] = useState<NewEventScore | null>(null);
   const isPictureMatch = mode === 'picture-match';
@@ -24,16 +27,21 @@ export function GameScreen() {
   const showLeaderboard = settings.showLeaderboard !== false;
   const rules = timerRules(settings);
 
-  if (!player) return <Navigate to="/player" replace />;
+  if (!player) return <Navigate to={missingPlayerDestination.current} replace />;
+  if (timerEntryBlocked) return <Navigate to="/player" replace />;
 
   const saveScore = (result: NewEventScore) => {
     setCurrentScore(result);
     save(player.name, result);
+    if (result.mode === 'target-timer') {
+      setKioskPlayer({ ...player, timerRoundCompleted: true });
+    }
   };
 
   const newPlayer = () => {
+    // Clearing the player triggers the missing-player redirect to registration.
+    missingPlayerDestination.current = '/player';
     setKioskPlayer(null);
-    navigate('/player', { replace: true });
   };
   const standings = rankScores(scores, mode).slice(0, 8);
   const scoreList = error ? <p role="alert" className="kiosk-empty">{error}</p> : standings.length === 0 ? <p className="kiosk-empty">{t('The top spot is waiting for you.')}</p> :
@@ -66,6 +74,7 @@ export function GameScreen() {
               key={player.id}
               {...rules}
               playerName={player.name}
+              allowReplay={settings.allowTimerReplay === true}
               instructionsSeen={player.timerInstructionsSeen}
               onInstructionsRead={() => setKioskPlayer({ ...player, timerInstructionsSeen: true })}
               onResult={(result) => saveScore({ mode: 'target-timer', ...result })}
