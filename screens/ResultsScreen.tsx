@@ -4,7 +4,7 @@ import { MenuButton } from '../components/MenuButton';
 import { useGameStore } from '../store/gameStore';
 import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
-import { supabaseService } from '../services/supabase';
+import { supabase } from '../services/supabase';
 import type { GameMode } from '../types';
 import { TIMER_GAME_NAME } from '../config/constants';
 
@@ -43,21 +43,9 @@ export function ResultsScreen({
 
     const submitScore = async () => {
       try {
-        // 1. Direct Supabase submission when client credentials are set
-        const directRes = await supabaseService.submitScore({
-          userId: user?.id || 'guest',
-          displayName: user?.displayName || 'Guest Taster',
-          gameMode,
-          score,
-          level,
-          accuracy: avgAccuracy,
-        });
-
-        if (directRes.rank) {
-          setRank(directRes.rank);
-        }
-
-        // 2. Also call Vercel Serverless Function if deployed
+        if (!supabase) throw new Error('Admin login is not configured.');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) throw new Error('Please sign in again before submitting scores.');
         const payload = {
           userId: user?.id || 'guest',
           runId: `run-${Date.now()}`,
@@ -70,53 +58,34 @@ export function ResultsScreen({
 
         const res = await fetch('/api/submit-score', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
           body: JSON.stringify(payload),
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (!directRes.rank && data.rank) setRank(data.rank);
-          if (data.rewardCode) {
-            setRewardCode(data.rewardCode);
-            addReward({
-              id: `rew-${Date.now()}`,
-              title: 'Sommelier Reserve Voucher',
-              description: `Earned ${score} pts in ${gameMode === 'target-timer' ? TIMER_GAME_NAME : 'Vintage Picture Match'}! Present at the Sommelier Bar.`,
-              badge: '🍾',
-              code: data.rewardCode,
-              unlockedAt: new Date().toISOString(),
-              claimed: false,
-            });
-          }
-        } else if (!directRes.rank) {
-          setRank(Math.max(1, Math.floor(10 - score / 4)));
-        }
-      } catch {
-        setRank((prev) => prev ?? Math.max(1, Math.floor(10 - score / 4)));
-      } finally {
-        if (score >= 3) {
-          setRewardCode((prev) => {
-            if (prev) return prev;
-            const code = `VINO-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-            addReward({
-              id: `rew-${Date.now()}`,
-              title: 'Sommelier Reserve Voucher',
-              description: `Earned ${score} pts in ${gameMode === 'target-timer' ? TIMER_GAME_NAME : 'Vintage Picture Match'}! Present at the Sommelier Bar.`,
-              badge: '🍾',
-              code,
-              unlockedAt: new Date().toISOString(),
-              claimed: false,
-            });
-            return code;
+        if (!res.ok) throw new Error('Unable to record the score. Check your admin session and try again.');
+        const data = await res.json();
+        setRank(data.rank);
+        if (data.rewardCode) {
+          setRewardCode(data.rewardCode);
+          addReward({
+            id: `rew-${Date.now()}`,
+            title: 'Sommelier Reserve Voucher',
+            description: `Earned ${score} pts in ${gameMode === 'target-timer' ? TIMER_GAME_NAME : 'Vintage Picture Match'}! Present at the Sommelier Bar.`,
+            badge: '🍾',
+            code: data.rewardCode,
+            unlockedAt: new Date().toISOString(),
+            claimed: false,
           });
         }
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : 'Unable to record the score.', 'error');
+      } finally {
         setIsSubmitting(false);
       }
     };
 
     submitScore();
-  }, [score, level, avgAccuracy, gameMode, user, addReward]);
+  }, [score, level, avgAccuracy, gameMode, user, addReward, showToast]);
 
   const handleShare = async () => {
     soundManager.playClick();
@@ -179,7 +148,7 @@ export function ResultsScreen({
           <div className="result-stat-box">
             <span className="result-stat-label">Lounge Rank</span>
             <span className="result-stat-value text-sun">
-              {isSubmitting ? '...' : rank ? `#${rank}` : 'Top 10%'}
+              {isSubmitting ? '...' : rank ? `#${rank}` : 'Not recorded'}
             </span>
           </div>
         </div>

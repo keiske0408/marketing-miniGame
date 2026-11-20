@@ -25,19 +25,14 @@ export const supabaseService = {
         .eq('id', userId)
         .single();
       if (error || !data) return null;
-      const isAdmin =
-        data.role === 'admin' ||
-        data.email === 'admin@chateauvintage.com' ||
-        (typeof data.email === 'string' && data.email.startsWith('admin@'));
-
       return {
         id: data.id,
         displayName: data.display_name,
         email: data.email,
         phone: data.phone,
         isGuest: false,
-        isAdmin,
-        role: isAdmin ? 'admin' : 'player',
+        isAdmin: false,
+        role: 'player',
         demoRoundsLeft: 9999,
         createdAt: data.created_at,
       };
@@ -58,6 +53,22 @@ export const supabaseService = {
       });
       return !error;
     } catch {
+      return false;
+    }
+  },
+
+  async updateAdminName(profile: UserProfile): Promise<boolean> {
+    if (!supabase) throw new Error('Admin login is not configured.');
+    try {
+      const { error } = await supabase.auth.updateUser({ data: { display_name: profile.displayName } });
+      if (error) throw error;
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id: profile.id, display_name: profile.displayName, email: profile.email, role: 'admin',
+      });
+      if (profileError) throw profileError;
+      return true;
+    } catch (error) {
+      console.error('Unable to update admin display name:', error);
       return false;
     }
   },
@@ -153,14 +164,17 @@ export const supabaseService = {
   },
 
   async deleteUserData(userId: string): Promise<boolean> {
-    if (!supabase) return true;
+    if (!supabase) throw new Error('Admin login is not configured.');
     try {
-      await supabase.from('consents').delete().eq('user_id', userId);
-      await supabase.from('user_settings').delete().eq('user_id', userId);
-      await supabase.from('scores').delete().eq('user_id', userId);
-      await supabase.from('profiles').delete().eq('id', userId);
+      for (const table of ['consents', 'user_settings', 'scores']) {
+        const { error } = await supabase.from(table).delete().eq('user_id', userId);
+        if (error) throw error;
+      }
+      const { error } = await supabase.from('player_registrations').delete().eq('operator_id', userId);
+      if (error) throw error;
       return true;
-    } catch {
+    } catch (error) {
+      console.error('Unable to clear remote event data:', error);
       return false;
     }
   },

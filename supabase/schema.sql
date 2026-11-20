@@ -18,18 +18,6 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Public read profiles" ON public.profiles;
-CREATE POLICY "Public read profiles"
-  ON public.profiles FOR SELECT
-  USING (true);
-
-DROP POLICY IF EXISTS "Event attendees can register and update profile" ON public.profiles;
-CREATE POLICY "Event attendees can register and update profile"
-  ON public.profiles FOR ALL
-  USING (true)
-  WITH CHECK (true);
-
-
 -- 2. User Settings table
 CREATE TABLE IF NOT EXISTS public.user_settings (
   user_id TEXT REFERENCES public.profiles(id) ON DELETE CASCADE PRIMARY KEY,
@@ -38,13 +26,6 @@ CREATE TABLE IF NOT EXISTS public.user_settings (
 );
 
 ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Attendees manage own settings" ON public.user_settings;
-CREATE POLICY "Attendees manage own settings"
-  ON public.user_settings FOR ALL
-  USING (true)
-  WITH CHECK (true);
-
 
 -- 3. Consents table (Terms & Privacy + Optional Wine Club Marketing)
 CREATE TABLE IF NOT EXISTS public.consents (
@@ -55,13 +36,6 @@ CREATE TABLE IF NOT EXISTS public.consents (
 );
 
 ALTER TABLE public.consents ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Attendees record consents" ON public.consents;
-CREATE POLICY "Attendees record consents"
-  ON public.consents FOR ALL
-  USING (true)
-  WITH CHECK (true);
-
 
 -- 4. Scores table (Supports both Vintage Picture Match & Perfect Pour Timer)
 CREATE TABLE IF NOT EXISTS public.scores (
@@ -77,12 +51,6 @@ CREATE TABLE IF NOT EXISTS public.scores (
 
 ALTER TABLE public.scores ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Public can view top scores" ON public.scores;
-CREATE POLICY "Public can view top scores"
-  ON public.scores FOR SELECT
-  USING (true);
-
-DROP POLICY IF EXISTS "Allow score submissions" ON public.scores;
-CREATE POLICY "Allow score submissions"
-  ON public.scores FOR INSERT
-  WITH CHECK (score >= 0 AND score <= 500 AND accuracy >= 0 AND accuracy <= 100);
+-- No public access, even before admin-access.sql is applied.
+REVOKE ALL ON public.profiles, public.user_settings, public.consents, public.scores FROM PUBLIC, anon, authenticated;
+-- Next run admin-access.sql to remove legacy policies and grant admin access.

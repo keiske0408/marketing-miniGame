@@ -1,22 +1,22 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import { useGameStore } from '../store/gameStore';
+import { useAuthStore } from '../store/authStore';
+import { useTranslation } from '../services/i18n';
 
 interface RequireAuthProps {
   children: ReactNode;
-  allowGuestDemo?: boolean;
 }
 
-export function RequireAuth({ children, allowGuestDemo = false }: RequireAuthProps) {
-  const user = useGameStore((state) => state.user);
+export function RequireAuth({ children }: RequireAuthProps) {
+  const auth = useAuthStore((state) => state.auth);
   const location = useLocation();
+  const t = useTranslation();
 
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  if (auth.status === 'checking') {
+    return <main className="screen-wrapper" role="status">{t('Checking admin session...')}</main>;
   }
-
-  if (user.isGuest && !allowGuestDemo && user.demoRoundsLeft <= 0) {
-    return <Navigate to="/login" state={{ from: location, guestExhausted: true }} replace />;
+  if (auth.status !== 'authenticated') {
+    return <Navigate to="/login" state={{ from: location.pathname + location.search + location.hash }} replace />;
   }
 
   return <>{children}</>;

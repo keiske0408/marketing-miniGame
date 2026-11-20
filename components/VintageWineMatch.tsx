@@ -77,7 +77,6 @@ export function VintageWineMatch({ onGameOver, onExit, onNewPlayer }: VintageWin
     if (phaseRef.current !== 'moving') return;
 
     soundManager.playClick();
-    haptics.tick();
     phaseRef.current = 'stopping';
     setPhase('stopping');
 

@@ -8,6 +8,7 @@ import { useGameStore } from '../store/gameStore';
 import { HOW_TO_PLAY_STEPS, SHOW_PICTURE_MATCH, TIMER_GAME_NAME } from '../config/constants';
 import { soundManager } from '../services/audio';
 import type { GameMode } from '../types';
+import { adminAuth } from '../store/authStore';
 
 export function MenuScreen() {
   const navigate = useNavigate();
@@ -15,7 +16,6 @@ export function MenuScreen() {
   const run = useGameStore((state) => state.run);
   const highScore = useGameStore((state) => state.highScore);
   const rewards = useGameStore((state) => state.rewards);
-  const logout = useGameStore((state) => state.logout);
   const startRun = useGameStore((state) => state.startRun);
   const showLeaderboard = useGameStore((state) => state.settings.showLeaderboard !== false);
 
@@ -40,9 +40,9 @@ export function MenuScreen() {
     navigate('/play');
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/home');
+  const handleLogout = async () => {
+    await adminAuth.signOut();
+    navigate('/login', { replace: true });
   };
 
   return (

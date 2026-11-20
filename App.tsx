@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { HomeScreen } from './screens/HomeScreen';
 import { SelectedGameScreen } from './screens/SelectedGameScreen';
 import { PlayerConsentScreen } from './screens/PlayerConsentScreen';
@@ -17,6 +17,7 @@ import { soundManager } from './services/audio';
 import { translate } from './services/i18n';
 import { EVENT_NAME, TIMER_GAME_NAME } from './config/constants';
 import { designPalette } from './services/eventRules';
+import { adminAuth } from './store/authStore';
 
 function RoutePresentation() {
   const { pathname } = useLocation();
@@ -37,6 +38,18 @@ function RoutePresentation() {
 
 export default function App() {
   const settings = useGameStore((state) => state.settings);
+
+  useEffect(() => adminAuth.start(), []);
+
+  useEffect(() => {
+    const recheck = () => { void adminAuth.retry(); };
+    window.addEventListener('focus', recheck);
+    window.addEventListener('online', recheck);
+    return () => {
+      window.removeEventListener('focus', recheck);
+      window.removeEventListener('online', recheck);
+    };
+  }, []);
 
   useEffect(() => {
     const handleAudioError = () => {
@@ -166,35 +179,22 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <RoutePresentation />
       <div className="app-shell">
         <Routes>
-          <Route path="/" element={<HomeScreen />} />
-          <Route path="/home" element={<HomeScreen />} />
-          <Route path="/game" element={<SelectedGameScreen />} />
-          <Route path="/player" element={<PlayerConsentScreen />} />
-          <Route path="/avp" element={<AvpScreen />} />
           <Route path="/login" element={<LoginScreen />} />
-          <Route
-            path="/menu"
-            element={
-              <RequireAuth>
-                <MenuScreen />
-              </RequireAuth>
-            }
-          />
-          <Route path="/play" element={<GameScreen />} />
-          <Route path="/settings" element={<SettingsScreen />} />
-          <Route path="/leaderboard" element={settings.showLeaderboard === false ? <Navigate to="/" replace /> : <LeaderboardScreen />} />
-          <Route
-            path="/rewards"
-            element={
-              <RequireAuth>
-                <RewardsScreen />
-              </RequireAuth>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route element={<RequireAuth><RoutePresentation /><Outlet /></RequireAuth>}>
+            <Route path="/" element={<HomeScreen />} />
+            <Route path="/home" element={<HomeScreen />} />
+            <Route path="/game" element={<SelectedGameScreen />} />
+            <Route path="/player" element={<PlayerConsentScreen />} />
+            <Route path="/avp" element={<AvpScreen />} />
+            <Route path="/menu" element={<MenuScreen />} />
+            <Route path="/play" element={<GameScreen />} />
+            <Route path="/settings" element={<SettingsScreen />} />
+            <Route path="/leaderboard" element={settings.showLeaderboard === false ? <Navigate to="/" replace /> : <LeaderboardScreen />} />
+            <Route path="/rewards" element={<RewardsScreen />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
         </Routes>
         <Toast />
       </div>

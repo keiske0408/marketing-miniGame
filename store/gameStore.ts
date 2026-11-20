@@ -6,6 +6,7 @@ import { soundManager } from '../services/audio';
 import { haptics } from '../services/haptics';
 import { supabaseService } from '../services/supabase';
 import { migrateLegacyTimerDefaults, normalizeSettings } from '../services/eventRules';
+import { EVENT_SCORES_CHANGED, EVENT_SCORES_KEY } from '../services/eventScores';
 
 interface GameRunState {
   isActive: boolean;
@@ -43,16 +44,9 @@ interface GameStoreState {
   // Auth
   user: UserProfile | null;
   consents: Consents | null;
-  loginAsGuest: (name?: string) => void;
-  loginAsAdmin: () => Promise<void>;
-  loginWithEmail: (
-    identifier: string,
-    displayName: string,
-    consents: { terms: boolean; marketing: boolean }
-  ) => Promise<void>;
+  setOperator: (user: UserProfile | null) => void;
   updateDisplayName: (name: string) => Promise<void>;
   decrementDemoRound: () => void;
-  logout: () => void;
   deleteAccountData: () => Promise<void>;
 
   // Settings
@@ -112,88 +106,23 @@ export const useGameStore = create<GameStoreState>()(
       user: null,
       consents: null,
 
-      loginAsGuest: (name?: string) => {
-        const guestUser: UserProfile = {
-          id: `guest-${Date.now()}`,
-          displayName: name?.trim() || 'Guest Taster',
-          isGuest: true,
-          isAdmin: false,
-          role: 'player',
-          demoRoundsLeft: 1,
-          createdAt: new Date().toISOString(),
-        };
-        set({ user: guestUser });
-        get().showToast('Welcome, Guest Taster (1 demo round)', 'info');
-      },
-
-      loginAsAdmin: async () => {
-        const adminUser: UserProfile = {
-          id: 'admin-chateau-01',
-          displayName: 'Château Grand Admin',
-          email: 'admin@chateauvintage.com',
-          isGuest: false,
-          isAdmin: true,
-          role: 'admin',
-          demoRoundsLeft: 9999,
-          createdAt: new Date().toISOString(),
-        };
-        const consents: Consents = {
-          termsAccepted: true,
-          marketingAccepted: true,
-          consentedAt: new Date().toISOString(),
-        };
-
-        set({ user: adminUser, consents });
-        await supabaseService.upsertProfile(adminUser);
-        await supabaseService.saveConsents(adminUser.id, consents);
-        get().showToast('👑 Welcome, Château Grand Admin! Full event settings unlocked.', 'success');
-      },
-
-      loginWithEmail: async (identifier, displayName, consentOpts) => {
-        const cleanId = identifier.trim().toLowerCase();
-        const isEmail = cleanId.includes('@');
-        const isAdmin = cleanId === 'admin@chateauvintage.com' || cleanId.startsWith('admin@');
-        const id = isAdmin
-          ? 'admin-chateau-01'
-          : `vino-${cleanId.replace(/[^a-z0-9]/g, '').slice(0, 18)}-${Date.now().toString(36)}`;
-
-        const newUser: UserProfile = {
-          id,
-          email: isEmail ? cleanId : undefined,
-          phone: !isEmail ? identifier.trim() : undefined,
-          displayName:
-            displayName.trim() ||
-            (isAdmin ? 'Château Grand Admin' : isEmail ? cleanId.split('@')[0] : 'Wine Guest'),
-          isGuest: false,
-          isAdmin,
-          role: isAdmin ? 'admin' : 'player',
-          demoRoundsLeft: 9999,
-          createdAt: new Date().toISOString(),
-        };
-        const consents: Consents = {
-          termsAccepted: consentOpts.terms,
-          marketingAccepted: consentOpts.marketing,
-          consentedAt: new Date().toISOString(),
-        };
-
-        set({ user: newUser, consents });
-
-        // Sync directly with Supabase
-        await supabaseService.upsertProfile(newUser);
-        await supabaseService.saveConsents(id, consents);
-        await supabaseService.syncSettings(id, get().settings);
-
-        get().showToast(`Cheers, ${newUser.displayName}! Pass registered.`, 'success');
+      setOperator: (user) => {
+        if (user && get().user?.id === user.id) return;
+        set({ user, consents: null, kioskPlayer: null, run: initialRunState });
       },
 
       updateDisplayName: async (name: string) => {
         const current = get().user;
         if (!current) return;
         const updated = { ...current, displayName: name.trim() };
-        set({ user: updated });
         if (!current.isGuest) {
-          await supabaseService.upsertProfile(updated);
+          const saved = await supabaseService.updateAdminName(updated);
+          if (!saved) {
+            get().showToast('Unable to update the admin profile. Please try again.', 'error');
+            return;
+          }
         }
+        set({ user: updated });
         get().showToast('Sommelier profile updated', 'success');
       },
 
@@ -209,26 +138,27 @@ export const useGameStore = create<GameStoreState>()(
         }
       },
 
-      logout: () => {
-        set({ user: null, run: initialRunState });
-        get().showToast('Signed out of Tasting Pass', 'info');
-      },
-
       deleteAccountData: async () => {
         const current = get().user;
         if (current && !current.isGuest) {
-          await supabaseService.deleteUserData(current.id);
+          const deleted = await supabaseService.deleteUserData(current.id);
+          if (!deleted) throw new Error('Unable to clear event data. Please try again.');
         }
+        localStorage.removeItem(EVENT_SCORES_KEY);
+        localStorage.removeItem('ppm_kiosk_leaderboard');
+        localStorage.removeItem('ppm_vintage_match_best');
+        window.dispatchEvent(new Event(EVENT_SCORES_CHANGED));
+        haptics.setEnabled(DEFAULT_SETTINGS.haptics);
         set({
-          user: null,
           consents: null,
+          kioskPlayer: null,
           settings: DEFAULT_SETTINGS,
           highScore: 0,
           highestLevel: 1,
           rewards: [],
           run: initialRunState,
         });
-        get().showToast('All tasting data permanently deleted', 'info');
+        get().showToast('Event data cleared. Your admin account is preserved.', 'info');
       },
 
       // Settings
@@ -403,7 +333,7 @@ export const useGameStore = create<GameStoreState>()(
           !SHOW_PICTURE_MATCH && saved?.selectedGameMode === 'picture-match'
             ? 'target-timer'
             : (saved?.selectedGameMode ?? current.selectedGameMode);
-        return { ...current, ...saved, selectedGameMode, settings: normalizeSettings(saved?.settings ?? {}) };
+        return { ...current, ...saved, user: null, consents: null, selectedGameMode, settings: normalizeSettings(saved?.settings ?? {}) };
       },
       onRehydrateStorage: () => (state, error) => {
         if (error) console.error('Unable to restore saved event data:', error);
@@ -414,8 +344,6 @@ export const useGameStore = create<GameStoreState>()(
       },
       partialize: (state) => ({
         selectedGameMode: state.selectedGameMode,
-        user: state.user,
-        consents: state.consents,
         settings: state.settings,
         highScore: state.highScore,
         highestLevel: state.highestLevel,

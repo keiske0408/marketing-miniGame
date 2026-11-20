@@ -8,11 +8,13 @@ import { Modal } from '../components/Modal';
 import { useGameStore } from '../store/gameStore';
 import { useTranslation } from '../services/i18n';
 import { soundManager } from '../services/audio';
+import { haptics, type HapticResult } from '../services/haptics';
 import type { Difficulty, PictureMatchMode, ThemeMode } from '../types';
 import { displayedSeconds, timerRules, validTimerRules } from '../services/eventRules';
 import { DESIGN_COLORS, SHOW_PICTURE_MATCH, TIMER_GAME_NAME } from '../config/constants';
 import ribbonBackground from '../assets/wine_game_UI/SCREEN 2/7.png';
 import circlesBackground from '../assets/wine_game_UI/SCREEN 2/5.png';
+import { adminAuth } from '../store/authStore';
 
 const DESIGN_PRESETS = [
   ['violet', 'Violet Velocity'],
@@ -30,7 +32,6 @@ export function SettingsScreen() {
   const updateSettings = useGameStore((state) => state.updateSettings);
   const updateDisplayName = useGameStore((state) => state.updateDisplayName);
   const deleteAccountData = useGameStore((state) => state.deleteAccountData);
-  const logout = useGameStore((state) => state.logout);
   const rules = timerRules(settings);
   const [timerDraft, setTimerDraft] = useState({
     target: rules.target.toFixed(2), winMin: rules.winMin.toFixed(2), winMax: rules.winMax.toFixed(2),
@@ -42,6 +43,7 @@ export function SettingsScreen() {
 
   const [editName, setEditName] = useState(user?.displayName || '');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [hapticTest, setHapticTest] = useState<HapticResult | null>(null);
   const [modalContent, setModalContent] = useState<{ title: string; body: string } | null>(null);
 
   const saveTimerRules = (event: React.FormEvent) => {
@@ -76,8 +78,12 @@ export function SettingsScreen() {
 
   const handleDeleteData = async () => {
     setShowDeleteModal(false);
-    await deleteAccountData();
-    navigate('/home');
+    try {
+      await deleteAccountData();
+      navigate('/home');
+    } catch (error) {
+      useGameStore.getState().showToast(error instanceof Error ? error.message : t('Unable to clear event data. Please try again.'), 'error');
+    }
   };
 
   return (
@@ -212,8 +218,17 @@ export function SettingsScreen() {
           <Toggle
             label={t('Vibration')}
             checked={settings.haptics}
-            onChange={(val) => updateSettings({ haptics: val })}
+            onChange={(val) => { updateSettings({ haptics: val }); setHapticTest(null); }}
           />
+          <button type="button" className="btn ghost" onClick={() => setHapticTest(haptics.test())}>
+            {t('Test vibration')}
+          </button>
+          {hapticTest && <p className="settings-hint" role="status">{t(
+            hapticTest === 'sent' ? 'Vibration requested. If you did not feel it, check your device settings.'
+              : hapticTest === 'disabled' ? 'Turn on vibration to test it.'
+              : hapticTest === 'unsupported' ? 'This browser or device does not support web vibration.'
+              : 'Vibration could not be started. Check your device settings and try again.'
+          )}</p>}
 
           <Toggle
             label={t('Reduce motion')}
@@ -283,9 +298,9 @@ export function SettingsScreen() {
               <button
                 type="button"
                 className="btn ghost text-danger"
-                onClick={() => {
-                  logout();
-                  navigate('/home');
+                onClick={async () => {
+                  await adminAuth.signOut();
+                  navigate('/login', { replace: true });
                 }}
               >
                 {t('Log Out')}
@@ -296,7 +311,7 @@ export function SettingsScreen() {
                 className="btn ghost text-danger-subtle"
                 onClick={() => setShowDeleteModal(true)}
               >
-                {t('Delete My Data')}
+                {t('Clear event data')}
               </button>
             </div>
           </div>
@@ -378,7 +393,7 @@ export function SettingsScreen() {
         }
       >
         <p className="modal-warning-text">
-          {t('This permanently deletes your profile, scores, rewards, and consent records. This cannot be undone.')}
+          {t('This clears this device’s event data, this admin’s remote game records, and player registrations saved by this admin. Other admins’ registrations and your admin account are preserved. This cannot be undone.')}
         </p>
       </Modal>
 
